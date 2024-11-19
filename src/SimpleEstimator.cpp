@@ -17,5 +17,5 @@ cardStat SimpleEstimator::estimate(Triple &q) {
 
     // perform your estimation here
 
-    return cardStat {10, 10, 10};
+    return cardStat {100, 100, 100};
 }
