@@ -10,13 +10,10 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g){
     graph = g;
 }
 
+auto sample_graph = std::make_shared<SimpleGraph>();
+
 void SimpleEstimator::prepare() {
-
-}
-
-cardStat SimpleEstimator::estimate(Triple &q) {
-
-    uint32_t sampleSize = 1000;
+    uint32_t sampleSize = 5000;
     uint32_t vertices = graph->getNoVertices();
 
     std::vector<std::vector<std::pair<uint32_t, uint32_t>>> const adj = graph->adj;
@@ -54,7 +51,7 @@ cardStat SimpleEstimator::estimate(Triple &q) {
     }
 
     // Create new graph instance
-    auto sample_graph = std::make_shared<SimpleGraph>();
+//    sample_graph =
 
     // Set the number of vertices and labels
     sample_graph->setNoVertices(vertices);
@@ -65,13 +62,21 @@ cardStat SimpleEstimator::estimate(Triple &q) {
             sample_graph->addEdge(s, edge.second, edge.first);
         }
     }
+}
+
+cardStat SimpleEstimator::estimate(Triple &q) {
+
     // perform evaluation
     auto ev = std::make_unique<SimpleEvaluator>(sample_graph);
     ev->prepare();
     auto result = ev->evaluate(q);
     // Scale result up to the size of the graph
-    return {result.noOut * vertices / sampleSize, result.noPaths * vertices / sampleSize, result.noIn * vertices / sampleSize};
-
+    double scalingFactor = graph->getNoEdges() / sample_graph->getNoEdges();
+    return cardStat {
+            static_cast<uint32_t>(result.noOut * scalingFactor),
+            static_cast<uint32_t>(result.noPaths * scalingFactor),
+            static_cast<uint32_t>(result.noIn * scalingFactor)
+    };
 
     // return cardStat {100, 100, 100};
 }
