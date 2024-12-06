@@ -9,8 +9,8 @@ SimpleEstimator::SimpleEstimator(std::shared_ptr<SimpleGraph> &g) {
 }
 
 void SimpleEstimator::prepare() {
-    const uint32_t NoEdges = graph->getNoEdges();
-    const uint32_t sampleSize = NoEdges / 5; // Determine sample size
+    uint32_t NoEdges = graph->getNoEdges();
+    uint32_t sampleSize = NoEdges / 5; // Determine sample size
 
     // Get original adjacency list
     std::vector<std::vector<std::pair<uint32_t, uint32_t>>> const originalAdj = graph->adj;
@@ -53,21 +53,20 @@ void SimpleEstimator::prepare() {
             sampledGraph->addEdge(s, edge.second, edge.first);
         }
     }
-
-    // Set up evaluator instance
-    sampleEvaluator = std::make_shared<SimpleEvaluator>(sampledGraph);
-    sampleEvaluator->prepare();
 }
 
 cardStat SimpleEstimator::estimate(Triple &q) {
     // Perform evaluation on the pre-sampled graph
-    auto [noOut, noPaths, noIn] = sampleEvaluator->evaluate(q);
+    auto ev = std::make_unique<SimpleEvaluator>(sampledGraph);
+    ev->prepare();
+    auto result = ev->evaluate(q);
 
     // Scale result up to the size of the graph
-    constexpr uint32_t scalingFactor = 5;
+    double scalingFactor = graph->getNoEdges() / sampledGraph->getNoEdges();
+
     return cardStat {
-            noOut * scalingFactor,
-            noPaths * scalingFactor,
-            noIn * scalingFactor
+            static_cast<uint32_t>(result.noOut * scalingFactor),
+            static_cast<uint32_t>(result.noPaths * scalingFactor),
+            static_cast<uint32_t>(result.noIn * scalingFactor)
     };
 }
