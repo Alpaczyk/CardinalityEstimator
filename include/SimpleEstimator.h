@@ -7,6 +7,7 @@
 class SimpleEstimator : public Estimator {
 
     std::shared_ptr<SimpleGraph> graph;
+    std::shared_ptr<SimpleGraph> sampledGraph;
 
 public:
     explicit SimpleEstimator(std::shared_ptr<SimpleGraph> &g);
