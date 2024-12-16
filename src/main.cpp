@@ -14,10 +14,10 @@ int main(int argc, char *argv[]) {
     std::string queriesFile {argv[2]};
 
     // uncomment for part 1
-    estimatorBench(graphFile, queriesFile);
+    // estimatorBench(graphFile, queriesFile);
     
     // uncomment for part 2
-    // evaluatorBench(graphFile, queriesFile);
+    evaluatorBench(graphFile, queriesFile);
 
 
     return 0;
