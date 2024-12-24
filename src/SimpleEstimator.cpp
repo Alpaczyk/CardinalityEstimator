@@ -13,13 +13,18 @@ void SimpleEstimator::prepare() {
     const uint32_t sampleSize = NoEdges / 5; // Determine sample size
 
     // Get original adjacency list
-    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> const originalAdj = graph->adj;
+    // std::vector<std::vector<std::pair<uint32_t, uint32_t>>> const originalAdj = graph->adj;
+
+    // Get original cell_value_array, column_index_array, and row_position_array
+    std::vector<uint32_t> const originalCellValues = graph->cell_value_array;
+    std::vector<uint32_t> const originalColumnIndices = graph->column_index_array;
+    std::vector<uint32_t> const originalRowPositions = graph->row_position_array;
 
     // Create new vector with all edges
     std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> allEdges;
-    for (uint32_t s = 0; s < originalAdj.size(); ++s) {
-        for (const auto &edge : originalAdj[s]) {
-            allEdges.emplace_back(s, edge.first, edge.second);
+    for (uint32_t s = 0; s < originalRowPositions.size() - 1; ++s) {
+        for (uint32_t i = originalRowPositions[s]; i < originalRowPositions[s + 1]; ++i) {
+            allEdges.emplace_back(s, originalCellValues[i], originalColumnIndices[i]);
         }
     }
 
@@ -32,13 +37,13 @@ void SimpleEstimator::prepare() {
     sampledEdges.assign(allEdges.begin(), allEdges.begin() + sampleSize);
 
     // Build the new adjacency matrix
-    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> sampledAdj(originalAdj.size());
-    for (const auto &edge : sampledEdges) {
-        uint32_t source = std::get<0>(edge);
-        uint32_t label = std::get<1>(edge);
-        uint32_t target = std::get<2>(edge);
-        sampledAdj[source].emplace_back(label, target); // Add edge to the new adjacency list
-    }
+    // std::vector<std::vector<std::pair<uint32_t, uint32_t>>> sampledAdj(originalAdj.size());
+    // for (const auto &edge : sampledEdges) {
+    //     uint32_t source = std::get<0>(edge);
+    //     uint32_t label = std::get<1>(edge);
+    //     uint32_t target = std::get<2>(edge);
+    //     sampledAdj[source].emplace_back(label, target); // Add edge to the new adjacency list
+    // }
 
     // Create new graph instance
     sampledGraph = std::make_shared<SimpleGraph>();
@@ -48,10 +53,11 @@ void SimpleEstimator::prepare() {
     sampledGraph->setNoLabels(graph->getNoLabels());
 
     // Add the edges to the new graph
-    for (uint32_t s = 0; s < sampledAdj.size(); ++s) {
-        for (const auto &edge : sampledAdj[s]) {
-            sampledGraph->addEdge(s, edge.second, edge.first);
-        }
+    for (const auto &edge : sampledEdges) {
+        uint32_t source = std::get<0>(edge);
+        uint32_t label = std::get<1>(edge);
+        uint32_t target = std::get<2>(edge);
+        sampledGraph->addEdge(source, target, label);
     }
 }
 
