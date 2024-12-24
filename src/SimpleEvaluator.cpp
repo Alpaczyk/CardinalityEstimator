@@ -26,14 +26,25 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
     cardStat stats {};
 
     for(int source = 0; source < g->getNoVertices(); source++) {
-        if(!g->adj[source].empty()) stats.noOut++;
+        // if(!g->adj[source].empty()) stats.noOut++;
+        if (g->row_position_array[source] < g->row_position_array[source + 1]) {
+            stats.noOut++;
+        }
     }
 
     stats.noPaths = g->getNoDistinctEdges();
 
-    for(int target = 0; target < g->getNoVertices(); target++) {
-        if(!g->reverse_adj[target].empty()) stats.noIn++;
+    // for(int target = 0; target < g->getNoVertices(); target++) {
+    //     if(!g->reverse_adj[target].empty()) stats.noIn++;
+    // }
+    std::unordered_set<uint32_t> distinctTargets;
+    for (uint32_t source = 0; source < g->getNoVertices(); source++) {
+        for (uint32_t j = g->row_position_array[source]; j < g->row_position_array[source + 1]; ++j) {
+            distinctTargets.insert(g->column_index_array[j]); 
+        }
     }
+    stats.noIn = distinctTargets.size();
+
 
     return stats;
 }
@@ -46,33 +57,67 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
  * @param in The graph to select from.
  * @return The graph which only has edges with the specified edge label.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+// std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
+//     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
+//     out->setNoLabels(in->getNoLabels());
+
+//     if(!inverse) {
+//         // going forward
+//         for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+//             for (auto labelTarget : in->adj[source]) {
+
+//                 auto label = labelTarget.first;
+//                 auto target = labelTarget.second;
+
+//                 if (label == projectLabel)
+//                     out->addEdge(source, target, outLabel);
+//             }
+//         }
+//     } else {
+//         // going backward
+//         for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+//             for (auto labelTarget : in->reverse_adj[source]) {
+
+//                 auto label = labelTarget.first;
+//                 auto target = labelTarget.second;
+
+//                 if (label == projectLabel)
+//                     out->addEdge(source, target, outLabel);
+//             }
+//         }
+//     }
+
+//     return out;
+// }
+
+std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    if(!inverse) {
+    if (!inverse) {
         // going forward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
-            for (auto labelTarget : in->adj[source]) {
+        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
+            for (uint32_t j = in->row_position_array[source]; j < in->row_position_array[source + 1]; ++j) {
+                auto label = in->cell_value_array[j];
+                auto target = in->column_index_array[j];
 
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
+                if (label == projectLabel) {
                     out->addEdge(source, target, outLabel);
+                }
             }
         }
     } else {
         // going backward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
-            for (auto labelTarget : in->reverse_adj[source]) {
+        // Iterate over all edges and add the edge to 'out' if the label matches and the direction is reversed
+        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
+            for (uint32_t j = in->row_position_array[source]; j < in->row_position_array[source + 1]; ++j) {
+                auto label = in->cell_value_array[j];
+                auto target = in->column_index_array[j];
 
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
-                    out->addEdge(source, target, outLabel);
+                if (label == projectLabel) {
+                    out->addEdge(target, source, outLabel); // Reverse source and target
+                }
             }
         }
     }
@@ -104,17 +149,35 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
  * @param right A graph to be merged from.
  * @return A number of distinct new edges added from the "right" graph into the "left" graph.
  */
-uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+// uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
 
+//     uint32_t numNewAdded = 0;
+
+//     for(uint32_t source = 0; source < right->getNoVertices(); source++) {
+//         for (auto labelTarget : right->adj[source]) {
+
+//             auto label = labelTarget.first;
+//             auto target = labelTarget.second;
+
+//             if(!left->edgeExists(source, target, label)) {
+//                 left->addEdge(source, target, label);
+//                 numNewAdded++;
+//             }
+//         }
+//     }
+
+//     return numNewAdded;
+// }
+
+uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
     uint32_t numNewAdded = 0;
 
-    for(uint32_t source = 0; source < right->getNoVertices(); source++) {
-        for (auto labelTarget : right->adj[source]) {
+    for (uint32_t source = 0; source < right->getNoVertices(); source++) {
+        for (uint32_t j = right->row_position_array[source]; j < right->row_position_array[source + 1]; ++j) {
+            auto label = right->cell_value_array[j];
+            auto target = right->column_index_array[j];
 
-            auto label = labelTarget.first;
-            auto target = labelTarget.second;
-
-            if(!left->edgeExists(source, target, label)) {
+            if (!left->edgeExists(source, target, label)) {
                 left->addEdge(source, target, label);
                 numNewAdded++;
             }
@@ -130,21 +193,39 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  * @param right Another graph to join with.
  * @return Answer graph for a join. Note that all labels in the answer graph are "0".
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+// std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
 
+//     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
+//     out->setNoLabels(1);
+
+//     for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
+//         for (auto labelTarget : left->adj[leftSource]) {
+
+//             int leftTarget = labelTarget.second;
+//             // try to join the left target with right s
+//             for (auto rightLabelTarget : right->adj[leftTarget]) {
+
+//                 auto rightTarget = rightLabelTarget.second;
+//                 out->addEdge(leftSource, rightTarget, 0);
+
+//             }
+//         }
+//     }
+
+//     return out;
+// }
+
+std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
 
-    for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
-        for (auto labelTarget : left->adj[leftSource]) {
+    for (uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
+        for (uint32_t i = left->row_position_array[leftSource]; i < left->row_position_array[leftSource + 1]; ++i) {
+            int leftTarget = left->column_index_array[i];
 
-            int leftTarget = labelTarget.second;
-            // try to join the left target with right s
-            for (auto rightLabelTarget : right->adj[leftTarget]) {
-
-                auto rightTarget = rightLabelTarget.second;
+            for (uint32_t j = right->row_position_array[leftTarget]; j < right->row_position_array[leftTarget + 1]; ++j) {
+                auto rightTarget = right->column_index_array[j];
                 out->addEdge(leftSource, rightTarget, 0);
-
             }
         }
     }
@@ -204,15 +285,29 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
  * @param in A graph to select from.
  * @return An answer graph as a result of the given selection.
  */
-std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
+// std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
 
+//     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
+//     out->setNoLabels(in->getNoLabels());
+
+//     for (auto labelTarget : in->adj[s]) {
+
+//         auto label = labelTarget.first;
+//         auto target = labelTarget.second;
+
+//         out->addEdge(s, target, label);
+//     }
+
+//     return out;
+// }
+
+std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    for (auto labelTarget : in->adj[s]) {
-
-        auto label = labelTarget.first;
-        auto target = labelTarget.second;
+    for (uint32_t i = in->row_position_array[s]; i < in->row_position_array[s + 1]; ++i) {
+        auto label = in->cell_value_array[i];
+        auto target = in->column_index_array[i];
 
         out->addEdge(s, target, label);
     }
@@ -226,16 +321,35 @@ std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleG
  * @param in A graph to select from.
  * @return An answer graph as a result of the given selection.
  */
-std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
+// std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
 
+//     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
+//     out->setNoLabels(in->getNoLabels());
+
+//     for (auto labelSource : in->reverse_adj[t]) {
+
+//         auto label = labelSource.first;
+//         auto source = labelSource.second;
+//         out->addEdge(source, t, label);
+//     }
+
+//     return out;
+// }
+
+std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    for (auto labelSource : in->reverse_adj[t]) {
+    // Iterate over all edges and add edges with target 't' to 'out'
+    for (uint32_t source = 0; source < in->getNoVertices(); source++) {
+        for (uint32_t i = in->row_position_array[source]; i < in->row_position_array[source + 1]; ++i) {
+            auto label = in->cell_value_array[i];
+            auto target = in->column_index_array[i];
 
-        auto label = labelSource.first;
-        auto source = labelSource.second;
-        out->addEdge(source, t, label);
+            if (target == t) {
+                out->addEdge(source, target, label);
+            }
+        }
     }
 
     return out;
