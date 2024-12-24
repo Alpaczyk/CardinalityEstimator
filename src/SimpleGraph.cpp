@@ -75,6 +75,23 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
                                          std::to_string(edgeLabel) + ")");
     adj[from].emplace_back(std::make_pair(edgeLabel, to));
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
+
+    // store the edge data in the CSR format
+    cell_value_array.push_back(edgeLabel);
+    column_index_array.push_back(to);
+
+    // for the first edge, set the row_position_array to 0
+    if (cell_value_array.size() == 1) {
+        row_position_array.push_back(0);
+        lastSource = from;
+    }
+
+    if (from > lastSource) {
+        for (uint32_t i = lastSource + 1; i <= from; ++i) {
+            row_position_array.push_back(cell_value_array.size() - 1); 
+        }
+        lastSource = from;
+    }
 }
 
 bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
@@ -116,5 +133,26 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     }
 
     graphFile.close();
+
+    // output the first 10 elements of each of the arrays
+    std::cout << "cell_value_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << cell_value_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "column_index_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << column_index_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "row_position_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << row_position_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Graph read successfully!" << std::endl;
 
 }
