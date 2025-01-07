@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <vector>
+#include <cstdint>
 
 using Identifier = std::uint32_t;
 static constexpr const Identifier NO_IDENTIFIER = ~Identifier(0);
