@@ -7,6 +7,7 @@
 #include <iostream>
 #include <regex>
 #include <fstream>
+#include <cstdint>
 #include "Graph.h"
 
 class SimpleGraph : public Graph {
