@@ -17,7 +17,7 @@ void findBenchmarks(std::vector<std::pair<std::string, std::string>>& benchmarks
 				queriesPath = entry.path().string();
 			}
 			if (entry.path().filename() == "graph.nt") {
-				graphPath = entry.path();
+				graphPath = entry.path().string();
 			}
 		}
 	}
