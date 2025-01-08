@@ -2,6 +2,7 @@
 #define QS_GRAPH_H
 
 #include <unordered_map>
+#include <cstdint>  // Included this line! Otherwise uint32_t - error
 
 class Graph {
 
