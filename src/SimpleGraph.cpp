@@ -69,6 +69,7 @@ void SimpleGraph::setNoLabels(uint32_t noLabels) {
 }
 
 void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+    // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
                                          "(" + std::to_string(from) + "," + std::to_string(to) + "," +
@@ -76,7 +77,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     adj[from].emplace_back(std::make_pair(edgeLabel, to));
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
 
-    // store the edge data in the CSR format
+    // construction of the compressed sparse row (CSR) arrays
     cell_value_array.push_back(edgeLabel);
     column_index_array.push_back(to);
 
@@ -134,7 +135,7 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
 
     graphFile.close();
 
-    // output the first 10 elements of each of the arrays
+    // output the first 20 elements of each of the arrays
     std::cout << "cell_value_array: ";
     for (int i = 0; i < 20; i++) {
         std::cout << cell_value_array[i] << " ";
