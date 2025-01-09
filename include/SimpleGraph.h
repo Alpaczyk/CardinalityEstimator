@@ -13,12 +13,19 @@ class SimpleGraph : public Graph {
 public:
     std::vector<std::vector<std::pair<uint32_t,uint32_t>>> adj;
     std::vector<std::vector<std::pair<uint32_t,uint32_t>>> reverse_adj; // vertex adjacency list
+
+    std::vector<uint32_t> cell_value_array;  // Stores the non-zero values (edge labels)
+    std::vector<uint32_t> column_index_array; // Stores the column indices (target vertices)
+    std::vector<uint32_t> row_position_array; // Stores the starting index of each row in the other arrays
+
+private:
+    uint32_t lastSource;
+
 protected:
     uint32_t V;
     uint32_t L;
 
 public:
-
     SimpleGraph() : V(0), L(0) {};
     SimpleGraph(std::shared_ptr<SimpleGraph> &other);
     ~SimpleGraph() = default;
