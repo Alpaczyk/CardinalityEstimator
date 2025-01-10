@@ -71,10 +71,10 @@ void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
  * @return The graph which only has edges with the specified edge label.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
-    //auto cacheKey = std::make_tuple(in, projectLabel, inverse);
-    //if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
-    //    return selectLabelCache[cacheKey];
-    //}
+    auto cacheKey = std::make_tuple(in, projectLabel, inverse);
+    if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
+        return selectLabelCache[cacheKey];
+    }
 
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
@@ -98,7 +98,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         }
     }
 
-    //selectLabelCache[cacheKey] = out;
+    selectLabelCache[cacheKey] = out;
     return out;
 }
 
@@ -108,10 +108,9 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-    //if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
-    //    return transitiveClosureCache[base];
-    //}
-
+    if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
+        return transitiveClosureCache[base];
+    }
     auto out = std::make_shared<SimpleGraph>(base);
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
@@ -119,7 +118,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
         numNewAdded = unionDistinct(out, delta);
     }
 
-    //transitiveClosureCache[base] = out;
+    transitiveClosureCache[base] = out;
     return out;
 }
 
@@ -275,6 +274,7 @@ std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleG
  */
 cardStat SimpleEvaluator::evaluate(Triple &query) {
     auto res = evaluateConcat(query.path);
+    invalidateCaches(SimpleEvaluator::graph);
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
     return SimpleEvaluator::computeStats(res);
