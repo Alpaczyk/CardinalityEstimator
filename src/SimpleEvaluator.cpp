@@ -1,11 +1,19 @@
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
+#include <unordered_map>
+#include <tuple>
+
+    std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> SimpleEvaluator::computeStatsCache;
+    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
+    std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
 
     // works only with SimpleGraph
     graph = g;
     est = nullptr; // estimator not attached by default
+
+
 }
 
 void SimpleEvaluator::attachEstimator(std::shared_ptr<SimpleEstimator> &e) {
@@ -17,26 +25,31 @@ void SimpleEvaluator::prepare() {
     // if attached, prepare the estimator
     if(est != nullptr) est->prepare();
 
+
     // prepare other things here.., if necessary
 
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
+    if (computeStatsCache.find(g) != computeStatsCache.end()) {
+        return computeStatsCache[g];
+    }
 
-    cardStat stats {};
-
-    for(int source = 0; source < g->getNoVertices(); source++) {
-        if(!g->adj[source].empty()) stats.noOut++;
+    cardStat stats{};
+    for (int source = 0; source < g->getNoVertices(); source++) {
+        if (!g->adj[source].empty()) stats.noOut++;
     }
 
     stats.noPaths = g->getNoDistinctEdges();
 
-    for(int target = 0; target < g->getNoVertices(); target++) {
-        if(!g->reverse_adj[target].empty()) stats.noIn++;
+    for (int target = 0; target < g->getNoVertices(); target++) {
+        if (!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
+    computeStatsCache[g] = stats;
     return stats;
 }
+
 
 /**
  * Select all edges from a graph with a given edge label.
@@ -47,36 +60,34 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
  * @return The graph which only has edges with the specified edge label.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+    auto cacheKey = std::make_tuple(in, projectLabel, inverse);
+    if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
+        return selectLabelCache[cacheKey];
+    }
 
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    if(!inverse) {
-        // going forward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+    // Original logic...
+    if (!inverse) {
+        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->adj[source]) {
-
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
-                    out->addEdge(source, target, outLabel);
+                if (labelTarget.first == projectLabel) {
+                    out->addEdge(source, labelTarget.second, outLabel);
+                }
             }
         }
     } else {
-        // going backward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->reverse_adj[source]) {
-
-                auto label = labelTarget.first;
-                auto target = labelTarget.second;
-
-                if (label == projectLabel)
-                    out->addEdge(source, target, outLabel);
+                if (labelTarget.first == projectLabel) {
+                    out->addEdge(source, labelTarget.second, outLabel);
+                }
             }
         }
     }
 
+    selectLabelCache[cacheKey] = out;
     return out;
 }
 
@@ -86,17 +97,21 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
+    if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
+        return transitiveClosureCache[base];
+    }
 
     auto out = std::make_shared<SimpleGraph>(base);
-
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
         auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
     }
 
+    transitiveClosureCache[base] = out;
     return out;
 }
+
 
 /**
  * Merges a graph into another graph.
@@ -153,52 +168,51 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
 }
 
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe) {
-    // Handle Kleene closure
-    if (pe.kleene) {
-        pe.kleene = false;  // Temporarily disable Kleene to evaluate the base case
-        auto base = evaluateUnionKleene(pe); // Recursively evaluate the base path
-        return transitiveClosure(base); // Compute transitive closure
-    }
 
-    // Handle single label case
-    if (pe.labels.size() == 1) {
-        const auto &labelDir = pe.labels[0];
-        return selectLabel(labelDir.label, 0, labelDir.reverse, graph);
+    if(pe.kleene) {
+        // evaluate closure
+        pe.kleene = false;
+        auto base = evaluateUnionKleene(pe);
+        return transitiveClosure(base);
+    } else {
+        // not Kleene
+        if (pe.labels.size() == 1) {
+            // base label selection
+            auto labelDir = pe.labels[0];
+            return selectLabel(labelDir.label, 0, labelDir.reverse, graph);
+        } else {
+            // (left-deep) union
+            auto out = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
+            for (int i = 1; i < pe.labels.size(); i++) {
+                auto rg = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
+                unionDistinct(out, rg);
+            }
+            return out;
+        }
     }
-
-    // Handle union of multiple labels
-    auto combinedGraph = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
-    for (size_t i = 1; i < pe.labels.size(); ++i) {
-        auto partialGraph = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
-        unionDistinct(combinedGraph, partialGraph); // Combine graphs efficiently
-    }
-
-    return combinedGraph;
 }
-
 
 /**
  * Given an AST, evaluate the query and produce an answer graph.
  * @param q Parsed AST.
  * @return Solution as a graph.
  */
-#include <algorithm>
-#include <vector>
-
-// Updated evaluateConcat function in SimpleEvaluator
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
-    // Start with the first path entry
-    auto resultGraph = evaluateUnionKleene(path[0]);
 
-    // Perform joins incrementally for remaining path entries
-    for (size_t i = 1; i < path.size(); ++i) {
-        auto nextGraph = evaluateUnionKleene(path[i]);
-        resultGraph = join(resultGraph, nextGraph); // Perform a join for concatenation
+
+    auto out  = evaluateUnionKleene(path[0]);
+    // evaluate according to the AST top-down
+    // 1. evaluate concatenations
+    if(path.size() > 1) {
+        // (left-deep) join
+        for(int i = 1; i < path.size(); i++) {
+            auto rg  = evaluateUnionKleene(path[i]);
+            out = join(out, rg);
+        }
     }
 
-    return resultGraph;
+    return out;
 }
-
 
 /**
  * Perform a selection on a source constant.
@@ -207,31 +221,41 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
  * @return An answer graph as a result of the given selection.
  */
 std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
+
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    if (s < in->adj.size() && !in->adj[s].empty()) {
-        for (const auto &labelTarget : in->adj[s]) {
-            out->addEdge(s, labelTarget.second, labelTarget.first);
-        }
+    for (auto labelTarget : in->adj[s]) {
+
+        auto label = labelTarget.first;
+        auto target = labelTarget.second;
+
+        out->addEdge(s, target, label);
     }
 
     return out;
 }
 
+/**
+ * Perform a selection on a target constant.
+ * @param s A target constant.
+ * @param in A graph to select from.
+ * @return An answer graph as a result of the given selection.
+ */
 std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
+
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    if (t < in->reverse_adj.size() && !in->reverse_adj[t].empty()) {
-        for (const auto &labelSource : in->reverse_adj[t]) {
-            out->addEdge(labelSource.second, t, labelSource.first);
-        }
+    for (auto labelSource : in->reverse_adj[t]) {
+
+        auto label = labelSource.first;
+        auto source = labelSource.second;
+        out->addEdge(source, t, label);
     }
 
     return out;
 }
-
 
 /**
  * Evaluate a path query. Produce a cardinality of the answer graph.

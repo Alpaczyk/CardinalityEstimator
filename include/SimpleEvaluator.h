@@ -7,11 +7,37 @@
 #include "Query.h"
 #include "Evaluator.h"
 #include "Graph.h"
+#include <tuple>
+#include <functional>
 
+namespace std {
+    // Custom hash function for std::tuple
+    template <>
+    struct hash<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool>> {
+        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool>& key) const {
+            auto& [graph, label, inverse] = key;
+            size_t seed = 0;
+
+            // Hash the shared pointer's address
+            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            // Hash the label
+            seed ^= std::hash<uint32_t>()(label) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            // Hash the boolean value
+            seed ^= std::hash<bool>()(inverse) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            return seed;
+        }
+    };
+}
 class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
     std::shared_ptr<SimpleEstimator> est;
+    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool>, std::shared_ptr<SimpleGraph>> selectLabelCache;
+    static std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> transitiveClosureCache;
+    static std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> computeStatsCache;
 
 public:
 
