@@ -31,9 +31,9 @@ void SimpleEvaluator::prepare() {
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
-    if (computeStatsCache.find(g) != computeStatsCache.end()) {
-        return computeStatsCache[g];
-    }
+    //if (computeStatsCache.find(g) != computeStatsCache.end()) {
+    //    return computeStatsCache[g];
+    //}
 
     cardStat stats{};
     for (int source = 0; source < g->getNoVertices(); source++) {
@@ -46,7 +46,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
         if (!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
-    computeStatsCache[g] = stats;
+    //computeStatsCache[g] = stats;
     return stats;
 }
 
