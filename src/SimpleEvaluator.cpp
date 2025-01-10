@@ -97,9 +97,9 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-    if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
-        return transitiveClosureCache[base];
-    }
+    //if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
+    //    return transitiveClosureCache[base];
+    //}
 
     auto out = std::make_shared<SimpleGraph>(base);
     uint32_t numNewAdded = 1;
@@ -108,7 +108,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
         numNewAdded = unionDistinct(out, delta);
     }
 
-    transitiveClosureCache[base] = out;
+    //transitiveClosureCache[base] = out;
     return out;
 }
 
