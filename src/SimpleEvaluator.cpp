@@ -31,9 +31,9 @@ void SimpleEvaluator::prepare() {
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
-    //if (computeStatsCache.find(g) != computeStatsCache.end()) {
-    //    return computeStatsCache[g];
-    //}
+    if (computeStatsCache.find(g) != computeStatsCache.end()) {
+        return computeStatsCache[g];
+    }
 
     cardStat stats{};
     for (int source = 0; source < g->getNoVertices(); source++) {
@@ -46,8 +46,19 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
         if (!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
-    //computeStatsCache[g] = stats;
+    computeStatsCache[g] = stats;
     return stats;
+}
+void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
+    for (auto it = selectLabelCache.begin(); it != selectLabelCache.end();) {
+        if (std::get<0>(it->first) == g) {
+            it = selectLabelCache.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    transitiveClosureCache.erase(g);
+    computeStatsCache.erase(g);
 }
 
 
@@ -60,10 +71,10 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
  * @return The graph which only has edges with the specified edge label.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
-    auto cacheKey = std::make_tuple(in, projectLabel, inverse);
-    if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
-        return selectLabelCache[cacheKey];
-    }
+    //auto cacheKey = std::make_tuple(in, projectLabel, inverse);
+    //if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
+    //    return selectLabelCache[cacheKey];
+    //}
 
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
@@ -87,7 +98,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         }
     }
 
-    selectLabelCache[cacheKey] = out;
+    //selectLabelCache[cacheKey] = out;
     return out;
 }
 

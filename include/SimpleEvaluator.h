@@ -56,6 +56,7 @@ public:
     static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
     static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
+    static void invalidateCaches(std::shared_ptr<SimpleGraph> &g);
 
     static cardStat computeStats(std::shared_ptr<SimpleGraph> &g);
 
