@@ -5,6 +5,9 @@ SimpleGraph::SimpleGraph(uint32_t n)   {
 }
 
 SimpleGraph::SimpleGraph(std::shared_ptr<SimpleGraph> &other)   {
+    adj = other->adj;
+    reverse_adj = other->reverse_adj;
+
     cell_value_array = other->cell_value_array;
     column_index_array = other->column_index_array;
     row_position_array = other->row_position_array;
@@ -19,9 +22,21 @@ uint32_t SimpleGraph::getNoVertices() const {
 
 void SimpleGraph::setNoVertices(uint32_t n) {
     V = n;
+
+    adj.resize(V);
+    reverse_adj.resize(V);
+
+    // TODO: also resize the CSR arrays
 }
 
 uint32_t SimpleGraph::getNoEdges() const {
+    // adjacency list representation
+    uint32_t sum = 0;
+    for (const auto & l : adj)
+        sum += l.size();
+    return sum;
+
+    // CSR representation
     return cell_value_array.size();
 }
 
@@ -33,6 +48,28 @@ bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,u
 }
 
 uint32_t SimpleGraph::getNoDistinctEdges() const {
+    // adjacency list representation
+    uint32_t sum = 0;
+
+    for (auto sourceVec : adj) {
+
+        std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
+
+        uint32_t prevTarget = 0;
+        uint32_t prevLabel = 0;
+        bool first = true;
+
+        for (const auto &labelTgtPair : sourceVec) {
+            if (first || !(prevTarget == labelTgtPair.second && prevLabel == labelTgtPair.first)) {
+                first = false;
+                sum++;
+                prevTarget = labelTgtPair.second;
+                prevLabel = labelTgtPair.first;
+            }
+        }
+    }
+
+    // CSR representation
     uint32_t sum = 0;
 
     for (uint32_t i = 0; i < V; ++i) { // Iterate over all rows
@@ -70,6 +107,14 @@ void SimpleGraph::setNoLabels(uint32_t noLabels) {
 }
 
 void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+    // construction of the adjacency list
+    if(from >= V || to >= V || edgeLabel >= L)
+        throw std::runtime_error(std::string("Edge data out of bounds: ") +
+                                         "(" + std::to_string(from) + "," + std::to_string(to) + "," +
+                                         std::to_string(edgeLabel) + ")");
+    adj[from].emplace_back(std::make_pair(edgeLabel, to));
+    reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
+
     if(from >= V || to >= V || edgeLabel >= L)
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
                                          "(" + std::to_string(from) + "," + std::to_string(to) + "," +
@@ -94,6 +139,11 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
 }
 
 bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+    // adjacency list representation
+    auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
+    return (it != adj[from].end());
+    
+    // CSR representation
     for (uint32_t i = row_position_array[from]; i < row_position_array[from + 1]; ++i) {
         if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
             return true;
@@ -137,7 +187,7 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
 
     graphFile.close();
 
-    // output the first 10 elements of each of the arrays
+    // output the first 20 elements of each of the arrays
     std::cout << "cell_value_array: ";
     for (int i = 0; i < 20; i++) {
         std::cout << cell_value_array[i] << " ";
