@@ -46,7 +46,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
         if (!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
-    computeStatsCache[g] = stats;
+    //computeStatsCache[g] = stats;
     return stats;
 }
 void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
@@ -98,7 +98,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         }
     }
 
-    selectLabelCache[cacheKey] = out;
+    //selectLabelCache[cacheKey] = out;
     return out;
 }
 
@@ -118,7 +118,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
         numNewAdded = unionDistinct(out, delta);
     }
 
-    transitiveClosureCache[base] = out;
+    //transitiveClosureCache[base] = out;
     return out;
 }
 
