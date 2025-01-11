@@ -194,6 +194,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
         } else {
             // (left-deep) union
             caching = false;
+            invalidateCaches(SimpleEvaluator::graph);
             auto out = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
                 auto rg = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
