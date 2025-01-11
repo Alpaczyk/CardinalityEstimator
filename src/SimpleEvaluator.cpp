@@ -84,7 +84,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         for (uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->adj[source]) {
                 if (labelTarget.first == projectLabel) {
-                    invalidateCaches(out);
                     out->addEdge(source, labelTarget.second, outLabel);
 
                 }
@@ -94,7 +93,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         for (uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->reverse_adj[source]) {
                 if (labelTarget.first == projectLabel) {
-                    invalidateCaches(out);
                     out->addEdge(source, labelTarget.second, outLabel);
                 }
             }
@@ -133,8 +131,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
  * @return A number of distinct new edges added from the "right" graph into the "left" graph.
  */
 uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
-    invalidateCaches(left);
-    invalidateCaches(right);
     uint32_t numNewAdded = 0;
 
     for(uint32_t source = 0; source < right->getNoVertices(); source++) {
@@ -160,8 +156,6 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  * @return Answer graph for a join. Note that all labels in the answer graph are "0".
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
-    invalidateCaches(left);
-    invalidateCaches(right);
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
 
@@ -197,7 +191,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
             return selectLabel(labelDir.label, 0, labelDir.reverse, graph);
         } else {
             // (left-deep) union
-            invalidateCaches(SimpleEvaluator::graph);
+            invalidateCaches(graph);
             auto out = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
                 auto rg = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
@@ -285,3 +279,5 @@ cardStat SimpleEvaluator::evaluate(Triple &query) {
 
     return SimpleEvaluator::computeStats(res);
 }
+ //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\graph.nt
+ //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\queries.csv
