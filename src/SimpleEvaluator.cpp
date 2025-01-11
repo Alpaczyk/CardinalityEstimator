@@ -4,8 +4,9 @@
 #include <tuple>
 
     std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> SimpleEvaluator::computeStatsCache;
-    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
+    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, uint32_t, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
     std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
+    bool caching = true;
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
 
@@ -71,8 +72,9 @@ void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
  * @return The graph which only has edges with the specified edge label.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
-    auto cacheKey = std::make_tuple(in, projectLabel, inverse);
-    if (selectLabelCache.find(cacheKey) != selectLabelCache.end()) {
+
+    auto cacheKey = std::make_tuple(in, projectLabel,outLabel, inverse);
+    if (selectLabelCache.find(cacheKey) != selectLabelCache.end() && caching) {
         return selectLabelCache[cacheKey];
     }
 
@@ -191,7 +193,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
             return selectLabel(labelDir.label, 0, labelDir.reverse, graph);
         } else {
             // (left-deep) union
-            invalidateCaches(graph);
+            caching = false;
             auto out = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
                 auto rg = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
