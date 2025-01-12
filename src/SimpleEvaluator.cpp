@@ -4,9 +4,10 @@
 #include <tuple>
 
     std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> SimpleEvaluator::computeStatsCache;
-    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, uint32_t, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
+    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
     std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
     bool caching = true;
+    bool joining = false;
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
 
@@ -71,9 +72,9 @@ void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
  * @param in The graph to select from.
  * @return The graph which only has edges with the specified edge label.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel,bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
-    auto cacheKey = std::make_tuple(in, projectLabel,outLabel, inverse);
+    auto cacheKey = std::make_tuple(in, projectLabel,join, inverse);
     if (selectLabelCache.find(cacheKey) != selectLabelCache.end() && caching) {
         return selectLabelCache[cacheKey];
     }
@@ -182,22 +183,24 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
 
     if(pe.kleene) {
         // evaluate closure
+        joining = false;
         pe.kleene = false;
         auto base = evaluateUnionKleene(pe);
         return transitiveClosure(base);
     } else {
         // not Kleene
         if (pe.labels.size() == 1) {
+            joining = false;
             // base label selection
             auto labelDir = pe.labels[0];
-            return selectLabel(labelDir.label, 0, labelDir.reverse, graph);
+            return selectLabel(labelDir.label, 0,joining, labelDir.reverse, graph);
         } else {
             // (left-deep) union
-            caching = false;
+            joining = true;
             invalidateCaches(SimpleEvaluator::graph);
-            auto out = selectLabel(pe.labels[0].label, 0, pe.labels[0].reverse, graph);
+            auto out = selectLabel(pe.labels[0].label, 0,joining, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
-                auto rg = selectLabel(pe.labels[i].label, 0, pe.labels[i].reverse, graph);
+                auto rg = selectLabel(pe.labels[i].label, 0,joining, pe.labels[i].reverse, graph);
                 unionDistinct(out, rg);
             }
             return out;
