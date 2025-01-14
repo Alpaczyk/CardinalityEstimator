@@ -248,3 +248,13 @@ cardStat SimpleEstimator::estimate(Triple &q) {
 
     return cardStat {noOut, noPaths, noIn};
 }
+
+uint32_t SimpleEstimator::estimateLabelCardinality(uint32_t label) {
+    uint32_t cardinality = 0;
+    if (histogramOutDepth.find(label) != histogramOutDepth.end()) {
+        for (const auto &bucket : histogramOutDepth[label]) {
+            cardinality += bucket.second;
+        }
+    }
+    return cardinality;
+}

@@ -23,6 +23,8 @@ public:
     void prepare() override ;
     cardStat estimate(Triple &q) override ;
 
+    uint32_t estimateLabelCardinality(uint32_t label);
+
 };
 
 

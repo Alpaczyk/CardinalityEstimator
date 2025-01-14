@@ -183,15 +183,48 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
+    if (path.empty()) {
+        // Return an empty graph if the path is empty
+        return std::make_shared<SimpleGraph>(graph->getNoVertices());
+    }
 
-    auto out  = evaluateUnionKleene(path[0]);
-    // evaluate according to the AST top-down
-    // 1. evaluate concatenations
-    if(path.size() > 1) {
-        // (left-deep) join
-        for(int i = 1; i < path.size(); i++) {
-            auto rg  = evaluateUnionKleene(path[i]);
-            out = join(out, rg);
+    // Vector to store label and direction along with estimated cardinality
+    std::vector<std::tuple<uint32_t, bool, uint32_t>> labelEstimates;
+
+    for (const auto &pe : path) {
+        for (const auto &labelDir : pe.labels) {
+            uint32_t cardinality = 0;
+
+            if (est != nullptr) {
+                // Use the estimator to get cardinality for this label
+                cardinality = est->estimateLabelCardinality(labelDir.label);
+            } else {
+                // Fallback if no estimator is attached (assume uniform distribution)
+                cardinality = graph->getNoDistinctEdges(); // Total edges as a rough estimate
+            }
+
+            labelEstimates.emplace_back(labelDir.label, labelDir.reverse, cardinality);
+        }
+    }
+
+    // Sort labels by their cardinality (ascending order) to minimize intermediate graph sizes
+    std::sort(labelEstimates.begin(), labelEstimates.end(),
+              [](const auto &a, const auto &b) { return std::get<2>(a) < std::get<2>(b); });
+
+    // Process the sorted labels
+    std::shared_ptr<SimpleGraph> out = nullptr;
+
+    for (const auto &labelInfo : labelEstimates) {
+        uint32_t label = std::get<0>(labelInfo);
+        bool reverse = std::get<1>(labelInfo);
+
+        auto selectedGraph = selectLabel(label, 0, reverse, graph);
+
+        if (out == nullptr) {
+            out = selectedGraph; // Initialize the output graph
+        } else {
+            // Join the current graph with the selected graph
+            out = join(out, selectedGraph);
         }
     }
 
