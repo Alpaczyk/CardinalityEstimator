@@ -188,47 +188,40 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
         return std::make_shared<SimpleGraph>(graph->getNoVertices());
     }
 
-    // Vector to store label and direction along with estimated cardinality
-    std::vector<std::tuple<uint32_t, bool, uint32_t>> labelEstimates;
+    // Vector to store subpath, corresponding graph, and cardinality
+    std::vector<std::tuple<PathEntry, std::shared_ptr<SimpleGraph>, uint32_t>> subpathGraphs;
 
-    for (const auto &pe : path) {
-        for (const auto &labelDir : pe.labels) {
-            uint32_t cardinality = 0;
-
-            if (est != nullptr) {
-                // Use the estimator to get cardinality for this label
-                cardinality = est->estimateLabelCardinality(labelDir.label);
-            } else {
-                // Fallback if no estimator is attached (assume uniform distribution)
-                cardinality = graph->getNoDistinctEdges(); // Total edges as a rough estimate
-            }
-
-            labelEstimates.emplace_back(labelDir.label, labelDir.reverse, cardinality);
-        }
+    // Step 1: Evaluate each path entry individually and store its cardinality
+    for (auto pe : path) {  // Create a local copy of the PathEntry
+        auto graphForPath = evaluateUnionKleene(pe);  // Now pe is non-const and can be modified
+        uint32_t cardinality = graphForPath->getNoEdges();  // Get edge count (cardinality)
+        subpathGraphs.emplace_back(pe, graphForPath, cardinality);
     }
 
-    // Sort labels by their cardinality (ascending order) to minimize intermediate graph sizes
-    std::sort(labelEstimates.begin(), labelEstimates.end(),
-              [](const auto &a, const auto &b) { return std::get<2>(a) < std::get<2>(b); });
+    // Step 2: Perform iterative joining based on smallest intermediate result
+    while (subpathGraphs.size() > 1) {
+        // Sort subpaths by cardinality (ascending order)
+        std::sort(subpathGraphs.begin(), subpathGraphs.end(),
+                  [](const auto &a, const auto &b) { return std::get<2>(a) < std::get<2>(b); });
 
-    // Process the sorted labels
-    std::shared_ptr<SimpleGraph> out = nullptr;
+        // Take the two subpaths with the smallest cardinalities
+        auto smallest1 = subpathGraphs[0];
+        auto smallest2 = subpathGraphs[1];
 
-    for (const auto &labelInfo : labelEstimates) {
-        uint32_t label = std::get<0>(labelInfo);
-        bool reverse = std::get<1>(labelInfo);
+        // Join the graphs of the two smallest subpaths
+        auto joinedGraph = join(std::get<1>(smallest1), std::get<1>(smallest2));
 
-        auto selectedGraph = selectLabel(label, 0, reverse, graph);
+        // Calculate the new cardinality of the joined graph
+        uint32_t newCardinality = joinedGraph->getNoEdges();
 
-        if (out == nullptr) {
-            out = selectedGraph; // Initialize the output graph
-        } else {
-            // Join the current graph with the selected graph
-            out = join(out, selectedGraph);
-        }
+        // Replace the two smallest subpaths with the new joined graph
+        subpathGraphs.erase(subpathGraphs.begin());
+        subpathGraphs.erase(subpathGraphs.begin());
+        subpathGraphs.emplace_back(PathEntry{}, joinedGraph, newCardinality);  // Dummy PathEntry
     }
 
-    return out;
+    // Return the final joined graph
+    return std::get<1>(subpathGraphs[0]);
 }
 
 /**
