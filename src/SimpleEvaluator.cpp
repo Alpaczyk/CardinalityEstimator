@@ -3,9 +3,10 @@
 #include <unordered_map>
 #include <tuple>
 
-    std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> SimpleEvaluator::computeStatsCache;
     std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
     std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
+    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::joinCache;
+
     bool caching = true;
     bool joining = false;
 
@@ -33,9 +34,6 @@ void SimpleEvaluator::prepare() {
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
-    if (computeStatsCache.find(g) != computeStatsCache.end()) {
-        return computeStatsCache[g];
-    }
 
     cardStat stats{};
     for (int source = 0; source < g->getNoVertices(); source++) {
@@ -48,7 +46,6 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
         if (!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
-    computeStatsCache[g] = stats;
     return stats;
 }
 void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
@@ -60,7 +57,6 @@ void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
         }
     }
     transitiveClosureCache.erase(g);
-    computeStatsCache.erase(g);
 }
 
 
@@ -134,6 +130,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
  * @return A number of distinct new edges added from the "right" graph into the "left" graph.
  */
 uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+
     uint32_t numNewAdded = 0;
 
     for(uint32_t source = 0; source < right->getNoVertices(); source++) {
@@ -159,6 +156,10 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  * @return Answer graph for a join. Note that all labels in the answer graph are "0".
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+    auto cacheKey = std::make_tuple(left, right);
+    if (joinCache.find(cacheKey) != joinCache.end()) {
+        return joinCache[cacheKey];
+    }
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
 
@@ -175,6 +176,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
             }
         }
     }
+    joinCache[cacheKey] = out;
 
     return out;
 }
@@ -185,19 +187,21 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
         // evaluate closure
         joining = false;
         pe.kleene = false;
+        caching = true;
         auto base = evaluateUnionKleene(pe);
         return transitiveClosure(base);
     } else {
         // not Kleene
         if (pe.labels.size() == 1) {
             joining = false;
+            caching = true;
             // base label selection
             auto labelDir = pe.labels[0];
             return selectLabel(labelDir.label, 0,joining, labelDir.reverse, graph);
         } else {
             // (left-deep) union
             joining = true;
-            invalidateCaches(SimpleEvaluator::graph);
+            caching = false;
             auto out = selectLabel(pe.labels[0].label, 0,joining, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
                 auto rg = selectLabel(pe.labels[i].label, 0,joining, pe.labels[i].reverse, graph);
@@ -214,7 +218,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
-
 
     auto out  = evaluateUnionKleene(path[0]);
     // evaluate according to the AST top-down
@@ -285,5 +288,6 @@ cardStat SimpleEvaluator::evaluate(Triple &query) {
 
     return SimpleEvaluator::computeStats(res);
 }
- //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\graph.nt
- //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\queries.csv
+ //C:\Users\kamil\CLionProjects\quicksilver2\workload\real\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver2\workload\real\1\queries.csv
+ //
+ //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\queries.csv

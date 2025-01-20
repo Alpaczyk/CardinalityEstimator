@@ -20,13 +20,26 @@ namespace std {
 
             // Hash the shared pointer's address
             seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
             // Hash the label
             seed ^= std::hash<uint32_t>()(label) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             // Hash the boolean value
             seed ^= std::hash<bool>()(join) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             // Hash the boolean value
             seed ^= std::hash<bool>()(inverse) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            return seed;
+        }
+    };
+    template <>
+     struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>> {
+        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>& key) const {
+            auto& [graph, graph2] = key;
+            size_t seed = 0;
+
+            // Hash the shared pointer's address
+            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+            seed ^= std::hash<void*>()(graph2.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
             return seed;
         }
@@ -38,7 +51,8 @@ class SimpleEvaluator : public Evaluator {
     std::shared_ptr<SimpleEstimator> est;
     static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> selectLabelCache;
     static std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> transitiveClosureCache;
-    static std::unordered_map<std::shared_ptr<SimpleGraph>, cardStat> computeStatsCache;
+    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>, std::shared_ptr<SimpleGraph>> joinCache;
+
 
 public:
 
