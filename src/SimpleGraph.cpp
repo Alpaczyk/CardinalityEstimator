@@ -25,16 +25,14 @@ void SimpleGraph::setNoVertices(uint32_t n) {
 
     adj.resize(V);
     reverse_adj.resize(V);
-
-    // TODO: also resize the CSR arrays
 }
 
 uint32_t SimpleGraph::getNoEdges() const {
     // adjacency list representation
-    uint32_t sum = 0;
-    for (const auto & l : adj)
-        sum += l.size();
-    return sum;
+    // uint32_t sum = 0;
+    // for (const auto & l : adj)
+    //     sum += l.size();
+    // return sum;
 
     // CSR representation
     return cell_value_array.size();
@@ -49,48 +47,51 @@ bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,u
 
 uint32_t SimpleGraph::getNoDistinctEdges() const {
     // adjacency list representation
-    uint32_t sum = 0;
+    // uint32_t sum = 0;
 
-    for (auto sourceVec : adj) {
+    // for (auto sourceVec : adj) {
 
-        std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
+    //     std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
 
-        uint32_t prevTarget = 0;
-        uint32_t prevLabel = 0;
-        bool first = true;
+    //     uint32_t prevTarget = 0;
+    //     uint32_t prevLabel = 0;
+    //     bool first = true;
 
-        for (const auto &labelTgtPair : sourceVec) {
-            if (first || !(prevTarget == labelTgtPair.second && prevLabel == labelTgtPair.first)) {
-                first = false;
-                sum++;
-                prevTarget = labelTgtPair.second;
-                prevLabel = labelTgtPair.first;
-            }
-        }
-    }
+    //     for (const auto &labelTgtPair : sourceVec) {
+    //         if (first || !(prevTarget == labelTgtPair.second && prevLabel == labelTgtPair.first)) {
+    //             first = false;
+    //             sum++;
+    //             prevTarget = labelTgtPair.second;
+    //             prevLabel = labelTgtPair.first;
+    //         } else {
+    //             std::cout << "Duplicate edge: (" << labelTgtPair.second << "," << labelTgtPair.first << ")" << std::endl;
+    //         }
+    //     }
+    // }
 
     // CSR representation
     uint32_t sum = 0;
 
-    for (uint32_t i = 0; i < V; ++i) { // Iterate over all rows
-        std::vector<std::pair<uint32_t, uint32_t>> row; 
-
-        // Extract the row from CSR representation
-        for (uint32_t j = row_position_array[i]; j < row_position_array[i + 1]; ++j) {
-            row.emplace_back(cell_value_array[j], column_index_array[j]); 
-        }
-
+    for (uint32_t source = 0; source < row_position_array.size(); ++source) {
         uint32_t prevTarget = 0;
         uint32_t prevLabel = 0;
         bool first = true;
 
-        // Count distinct edges in the row
-        for (const auto &labelTgtPair : row) {
-            if (first || !(prevTarget == labelTgtPair.second && prevLabel == labelTgtPair.first)) {
+        // iterate over the edges of the source vertex
+        // Determine the end index for the inner loop
+        uint32_t end;
+        if (source + 1 < row_position_array.size()) { 
+            end = row_position_array[source + 1];
+        } else {
+            end = column_index_array.size(); 
+        }
+
+        for (uint32_t i = row_position_array[source]; i < end; ++i) {
+            if (first || !(prevTarget == column_index_array[i] && prevLabel == cell_value_array[i])) {
                 first = false;
                 sum++;
-                prevTarget = labelTgtPair.second;
-                prevLabel = labelTgtPair.first;
+                prevTarget = column_index_array[i];
+                prevLabel = cell_value_array[i];
             }
         }
     }
@@ -107,6 +108,9 @@ void SimpleGraph::setNoLabels(uint32_t noLabels) {
 }
 
 void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+    // std::cout << "---------------------------------" << std::endl;
+    // std::cout << "Adding edge: (" << from << "," << to << "," << edgeLabel << ")" << std::endl;
+
     // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
@@ -115,33 +119,94 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     adj[from].emplace_back(std::make_pair(edgeLabel, to));
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
 
-    if(from >= V || to >= V || edgeLabel >= L)
-        throw std::runtime_error(std::string("Edge data out of bounds: ") +
-                                         "(" + std::to_string(from) + "," + std::to_string(to) + "," +
-                                         std::to_string(edgeLabel) + ")");
+    // std::cout << "Added edge to adjacency list" << std::endl;
 
     // store the edge data in the CSR format
-    cell_value_array.push_back(edgeLabel);
-    column_index_array.push_back(to);
-
     // for the first edge, set the row_position_array to 0
-    if (cell_value_array.size() == 1) {
-        row_position_array.push_back(0);
-        lastSource = from;
-    }
-
-    if (from > lastSource) {
-        for (uint32_t i = lastSource + 1; i <= from; ++i) {
-            row_position_array.push_back(cell_value_array.size() - 1); 
+    if (cell_value_array.size() == 0) {
+        // insertion of the first edge
+        // std::cout << "Inserting first edge" << std::endl;
+        cell_value_array.push_back(edgeLabel);
+        column_index_array.push_back(to);
+        
+        for (uint32_t i = 0; i <= from; ++i) {
+            row_position_array.push_back(0);
         }
+
         lastSource = from;
+        highestTarget = to;
+    } else {
+        // std::cout << "Last source: " << lastSource << std::endl;
+        // std::cout << "Last target: " << highestTarget << std::endl;
+
+        // if the source vertex is the same as the last source, append the edge data
+        if (from == lastSource) {
+            if (to > highestTarget || (to == highestTarget && edgeLabel > cell_value_array.back())) {
+                // std::cout << "Simple append edge to same source" << std::endl;
+                cell_value_array.push_back(edgeLabel);
+                column_index_array.push_back(to);
+
+                highestTarget = to;
+            } else {
+                // find the right position to insert the edge data
+                // std::cout << "Finding position to insert edge for same source" << std::endl;
+                uint32_t i = row_position_array[from];
+
+                while (i < cell_value_array.size() && column_index_array[i] < to) {
+                    i++;
+                }
+
+                while (i < cell_value_array.size() && column_index_array[i] == to && cell_value_array[i] < edgeLabel) {
+                    i++;
+                }
+
+                // insert the edge data
+                cell_value_array.insert(cell_value_array.begin() + i, edgeLabel);
+                column_index_array.insert(column_index_array.begin() + i, to);
+            }
+        } else if (from > lastSource) {
+            // std::cout << "Appending edge with larger source" << std::endl;
+            // if the source vertex is greater than the last source, append the row_position_array
+            cell_value_array.push_back(edgeLabel);
+            column_index_array.push_back(to);
+
+            for (uint32_t i = lastSource + 1; i <= from; ++i) {
+                row_position_array.push_back(cell_value_array.size() - 1); 
+            }
+
+            lastSource = from;
+            highestTarget = to;
+        } else {
+            // std::cout << "Inserting edge to smaller source" << std::endl;
+
+            // if the source vertex is less than the last source, find the correct position to insert the edge data
+            uint32_t i = row_position_array[from];
+
+            while (i < row_position_array[from + 1] && column_index_array[i] < to) {
+                i++;
+            }
+
+            while (i < cell_value_array.size() && column_index_array[i] == to && cell_value_array[i] < edgeLabel) {
+                i++;
+            }
+
+            // insert the edge data
+            cell_value_array.insert(cell_value_array.begin() + i, edgeLabel);
+            column_index_array.insert(column_index_array.begin() + i, to);
+
+            // update the row_position_array
+            for (uint32_t i = from + 1; i <= lastSource; ++i) {
+                row_position_array[i]++;
+            }
+
+        }
     }
 }
 
 bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     // adjacency list representation
-    auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
-    return (it != adj[from].end());
+    // auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
+    // return (it != adj[from].end());
     
     // CSR representation
     for (uint32_t i = row_position_array[from]; i < row_position_array[from + 1]; ++i) {
@@ -187,22 +252,43 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
 
     graphFile.close();
 
-    // output the first 20 elements of each of the arrays
-    std::cout << "cell_value_array: ";
+    // output first 20 elements of the adjacency list
+    std::cout << "adjacency list: ";
     for (int i = 0; i < 20; i++) {
-        std::cout << cell_value_array[i] << " ";
+        std::cout << i << ": ";
+        for (const auto &pair : adj[i]) {
+            std::cout << "(" << pair.first << "," << pair.second << ") ";
+        }
+        std::cout << std::endl;
+    }
+
+    // output sizes of the adjacency list and CSR arrays
+    std::cout << "adjacency list size: " << adj.size() << std::endl;
+    
+    std::cout << "row_position_array size: " << row_position_array.size() << std::endl;
+    std::cout << "column_index_array size: " << column_index_array.size() << std::endl;
+    std::cout << "cell_value_array size: " << cell_value_array.size() << std::endl;
+
+    std::cout << "noVertices: " << getNoVertices() << std::endl;
+    std::cout << "noEdges: " << getNoEdges() << std::endl;
+    std::cout << "noDistinctEdges: " << getNoDistinctEdges() << std::endl;
+
+    // output the first elements of each of the arrays
+    std::cout << "row_position_array: ";
+    for (int i = 0; i < 40; i++) {
+        std::cout << row_position_array[i] << " ";
     }
     std::cout << std::endl;
 
     std::cout << "column_index_array: ";
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 40; i++) {
         std::cout << column_index_array[i] << " ";
     }
     std::cout << std::endl;
 
-    std::cout << "row_position_array: ";
-    for (int i = 0; i < 20; i++) {
-        std::cout << row_position_array[i] << " ";
+    std::cout << "cell_value_array: ";
+    for (int i = 0; i < 40; i++) {
+        std::cout << cell_value_array[i] << " ";
     }
     std::cout << std::endl;
 
