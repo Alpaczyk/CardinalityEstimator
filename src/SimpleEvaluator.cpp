@@ -29,17 +29,11 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
         if(!g->adj[source].empty()) stats.noOut++;
     }
 
-    std::cout << "\nNo. of out edges: " << stats.noOut << std::endl;
-
     stats.noPaths = g->getNoDistinctEdges();
-
-    std::cout << "\nNo. of paths: " << stats.noPaths << std::endl;
 
     for(int target = 0; target < g->getNoVertices(); target++) {
         if(!g->reverse_adj[target].empty()) stats.noIn++;
     }
-
-    std::cout << "\nNo. of in edges: " << stats.noIn << std::endl;
 
     return stats;
 }
@@ -97,7 +91,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
 
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
-        std::cout << "\n ------------- Iterating for TC" << std::endl;
         auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
     }
@@ -143,18 +136,13 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
     out->setNoLabels(1);
 
     for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
-        // std::cout << "\n Processing source " << leftSource << std::endl;
         for (auto labelTarget : left->adj[leftSource]) {
-            // std::cout << "\n Processing edge " << labelTarget.first << " to " << labelTarget.second << std::endl;
-
             int leftTarget = labelTarget.second;
             // try to join the left target with right s
             for (auto rightLabelTarget : right->adj[leftTarget]) {
 
                 auto rightTarget = rightLabelTarget.second;
                 out->addEdge(leftSource, rightTarget, 0);
-                // std::cout << "\n Added edge from " << leftSource << " to " << rightTarget << std::endl;
-
             }
         }
     }
@@ -258,12 +246,7 @@ std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleG
  */
 cardStat SimpleEvaluator::evaluate(Triple &query) {
     auto res = evaluateConcat(query.path);
-    std::cout << "\n Evaluated the query" << std::endl;
-
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
-    std::cout << "\n Selected the source or target" << std::endl;
-
     return SimpleEvaluator::computeStats(res);
-    std::cout << "\n Computed the stats" << std::endl;
 }
