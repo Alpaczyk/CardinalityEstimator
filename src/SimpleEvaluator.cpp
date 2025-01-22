@@ -47,9 +47,13 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
  * @return The graph which only has edges with the specified edge label.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+    std::cout << "Selecting label: " << projectLabel << std::endl;
 
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
+
+    std::cout << "No vertices: " << out->getNoVertices() << std::endl;
+    std::cout << "No labels: " << out->getNoLabels() << std::endl;
 
     if(!inverse) {
         // going forward
@@ -60,6 +64,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
                 auto target = labelTarget.second;
 
                 if (label == projectLabel)
+                    std::cout << "Adding edge: (" << source << "," << target << "," << outLabel << ")" << std::endl;
                     out->addEdge(source, target, outLabel);
             }
         }
@@ -77,6 +82,26 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         }
     }
 
+    // output the first elements of each of the arrays
+    std::cout << "row_position_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << out->row_position_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "column_index_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << out->column_index_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "cell_value_array: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << out->cell_value_array[i] << " ";
+    }
+    std::cout << std::endl;
+
+
     return out;
 }
 
@@ -86,7 +111,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-
     auto out = std::make_shared<SimpleGraph>(base);
 
     uint32_t numNewAdded = 1;
@@ -105,7 +129,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
  * @return A number of distinct new edges added from the "right" graph into the "left" graph.
  */
 uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
-
     uint32_t numNewAdded = 0;
 
     for(uint32_t source = 0; source < right->getNoVertices(); source++) {
