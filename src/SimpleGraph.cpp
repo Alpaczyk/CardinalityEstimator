@@ -45,6 +45,14 @@ bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,u
     return false;
 }
 
+uint32_t SimpleGraph::getRowEndIndex(uint32_t source) const {
+        if (source + 1 < row_position_array.size()) {
+            return row_position_array[source + 1];
+        } else {
+            return column_index_array.size();
+        }
+    }
+
 uint32_t SimpleGraph::getNoDistinctEdges() const {
     // adjacency list representation
     // uint32_t sum = 0;
@@ -78,15 +86,7 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
         bool first = true;
 
         // iterate over the edges of the source vertex
-        // Determine the end index for the inner loop
-        uint32_t end;
-        if (source + 1 < row_position_array.size()) { 
-            end = row_position_array[source + 1];
-        } else {
-            end = column_index_array.size(); 
-        }
-
-        for (uint32_t i = row_position_array[source]; i < end; ++i) {
+        for (uint32_t i = row_position_array[source]; i < getRowEndIndex(source); ++i) {
             if (first || !(prevTarget == column_index_array[i] && prevLabel == cell_value_array[i])) {
                 first = false;
                 sum++;
@@ -209,12 +209,12 @@ bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     return (it != adj[from].end());
     
     // CSR representation
-    // for (uint32_t i = row_position_array[from]; i < row_position_array[from + 1]; ++i) {
-    //     if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
-    //         return true;
-    //     }
-    // }
-    // return false;
+    for (uint32_t i = row_position_array[from]; i < getRowEndIndex(from); ++i) {
+        if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
