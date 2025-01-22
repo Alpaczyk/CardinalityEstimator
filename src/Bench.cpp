@@ -139,6 +139,7 @@ struct benchresult_t evaluatorBench(std::string &graphFile, std::string &queries
 		// perform evaluation
 		// parse the query into an AST
 		std::cout << "\nProcessing query: " << query.toString();
+		std::cout.flush(); // flush the output buffer to make sure we notice the query
 
 		// perform the evaluation
 		start = std::chrono::steady_clock::now();

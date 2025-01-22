@@ -205,20 +205,20 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
 
 bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     // adjacency list representation
-    // auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
-    // return (it != adj[from].end());
+    auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
+    return (it != adj[from].end());
     
     // CSR representation
-    for (uint32_t i = row_position_array[from]; i < row_position_array[from + 1]; ++i) {
-        if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
-            return true;
-        }
-    }
-    return false;
+    // for (uint32_t i = row_position_array[from]; i < row_position_array[from + 1]; ++i) {
+    //     if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
+    //         return true;
+    //     }
+    // }
+    // return false;
 }
 
 void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
-
+    
     std::string line;
     std::ifstream graphFile { fileName };
 
