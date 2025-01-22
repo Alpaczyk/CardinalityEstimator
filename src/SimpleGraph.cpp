@@ -45,9 +45,9 @@ bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,u
     return false;
 }
 
-uint32_t SimpleGraph::getRowEndIndex(uint32_t s) const {
-        if (s + 1 < row_position_array.size()) {
-            return row_position_array[s + 1];
+uint32_t SimpleGraph::getRowEndIndex(uint32_t source) const {
+        if (source + 1 < row_position_array.size()) {
+            return row_position_array[source + 1];
         } else {
             return column_index_array.size();
         }
@@ -111,12 +111,11 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     // std::cout << "---------------------------------" << std::endl;
     // std::cout << "Adding edge: (" << from << "," << to << "," << edgeLabel << ")" << std::endl;
 
+    // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
                                          "(" + std::to_string(from) + "," + std::to_string(to) + "," +
                                          std::to_string(edgeLabel) + ")");
-
-    // construction of the adjacency list
     adj[from].emplace_back(std::make_pair(edgeLabel, to));
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
 
@@ -206,14 +205,10 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
 
 bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     // adjacency list representation
-    // auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
-    // return (it != adj[from].end());
+    auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
+    return (it != adj[from].end());
     
-    // // CSR representation
-    // std::cout << "Checking edge existence: (" << from << "," << to << "," << edgeLabel << ")" << std::endl;
-    // std::cout << "Row position: " << row_position_array[from] << std::endl;
-    // std::cout << "Row end index: " << getRowEndIndex(from) << std::endl;
-
+    // CSR representation
     for (uint32_t i = row_position_array[from]; i < getRowEndIndex(from); ++i) {
         if (column_index_array[i] == to && cell_value_array[i] == edgeLabel) {
             return true;
