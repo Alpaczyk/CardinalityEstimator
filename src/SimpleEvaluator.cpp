@@ -269,19 +269,69 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
- 
-    auto out  = evaluateUnionKleene(path[0]);
-    // evaluate according to the AST top-down
-    // 1. evaluate concatenations
-    if(path.size() > 1) {
-        // (left-deep) join
-        for(int i = 1; i < path.size(); i++) {
-            auto rg  = evaluateUnionKleene(path[i]);
-            out = join(out, rg);
+    // Vector to store subpath, corresponding graph, and cardinality
+    std::vector<std::tuple<PathEntry, std::shared_ptr<SimpleGraph>, uint32_t>> subpathGraphs;
+
+    // Step 1: Evaluate each path entry individually and store its cardinality
+    for (size_t i = 0; i < path.size(); i++) {
+        auto pe = path[i];
+        auto graphForPath = evaluateUnionKleene(const_cast<PathEntry&>(pe));  // Evaluate graph
+
+        // Apply source filter to the first path entry
+        if (i == 0 && s != NO_IDENTIFIER) {
+            graphForPath = selectSource(s, graphForPath);
         }
+
+        // Apply target filter to the last path entry
+        if (i == path.size() - 1 && t != NO_IDENTIFIER) {
+            graphForPath = selectTarget(t, graphForPath);
+        }
+
+        uint32_t cardinality = graphForPath->getNoEdges();  // Get edge count (cardinality)
+        subpathGraphs.emplace_back(pe, graphForPath, cardinality);
     }
 
-    return out;
+    // Step 2: Iteratively join graphs based on the lowest cardinality result of adjacent segments
+    while (subpathGraphs.size() > 1) {
+        size_t minIndex = 0;
+        uint64_t minCost = UINT64_MAX;
+
+        // Find the pair of adjacent subpaths with the smallest join cost
+        for (size_t i = 0; i < subpathGraphs.size() - 1; i++) {
+            uint32_t leftCardinality = std::get<2>(subpathGraphs[i]);
+            uint32_t rightCardinality = std::get<2>(subpathGraphs[i + 1]);
+            uint64_t joinCost = static_cast<uint64_t>(leftCardinality) * rightCardinality;
+
+            if (joinCost < minCost) {
+                minCost = joinCost;
+                minIndex = i;  // Store the index of the left graph in the pair
+            }
+        }
+
+        // Join the two graphs with the smallest cost
+        auto leftGraph = std::get<1>(subpathGraphs[minIndex]);
+        auto rightGraph = std::get<1>(subpathGraphs[minIndex + 1]);
+        auto joinedGraph = join(leftGraph, rightGraph);
+
+        // Calculate the new cardinality of the joined graph
+        uint32_t newCardinality = joinedGraph->getNoEdges();
+
+        // Create a new combined PathEntry
+        PathEntry combinedPath;
+        combinedPath.labels.insert(combinedPath.labels.end(),
+                                   std::get<0>(subpathGraphs[minIndex]).labels.begin(),
+                                   std::get<0>(subpathGraphs[minIndex]).labels.end());
+        combinedPath.labels.insert(combinedPath.labels.end(),
+                                   std::get<0>(subpathGraphs[minIndex + 1]).labels.begin(),
+                                   std::get<0>(subpathGraphs[minIndex + 1]).labels.end());
+
+        // Replace the two adjacent subpaths with the new combined graph and path entry
+        subpathGraphs[minIndex] = std::make_tuple(combinedPath, joinedGraph, newCardinality);
+        subpathGraphs.erase(subpathGraphs.begin() + minIndex + 1);
+    }
+
+    // Return the final joined graph
+    return std::get<1>(subpathGraphs[0]);
 }
 
 /**

@@ -2,3 +2,4 @@ user_id             | prep_time | query_time_syn | query_time_real | load_time |
 l.j.hamelijnck      | 363.0     | 529.0          | 13663.0         | 3843.0    | 24.59    | 14688.369            #Baseline
 l.j.hamelijnck      | 468.0     | 310.0          | 47740.0         | 3920.0    | 24.07    | 48536.256            #Changed evaluateConcat
 l.j.hamelijnck      | 365.0     | 530.0          | 13802.0         | 3855.0    | 24.59    | 14828.384999999998   #Changed evaluateConcat with SMART TC alg
+l.j.hamelijnck      | 481.0     | 520.0          | 48472.0         | 3888.0    | 24.07    | 49478.25             #Only SMART TC alg added
