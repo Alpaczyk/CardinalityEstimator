@@ -183,45 +183,19 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
-    if (path.empty()) {
-        // Return an empty graph if the path is empty
-        return std::make_shared<SimpleGraph>(graph->getNoVertices());
+
+    auto out  = evaluateUnionKleene(path[0]);
+    // evaluate according to the AST top-down
+    // 1. evaluate concatenations
+    if(path.size() > 1) {
+        // (left-deep) join
+        for(int i = 1; i < path.size(); i++) {
+            auto rg  = evaluateUnionKleene(path[i]);
+            out = join(out, rg);
+        }
     }
 
-    // Vector to store subpath, corresponding graph, and cardinality
-    std::vector<std::tuple<PathEntry, std::shared_ptr<SimpleGraph>, uint32_t>> subpathGraphs;
-
-    // Step 1: Evaluate each path entry individually and store its cardinality
-    for (auto pe : path) {  // Create a local copy of the PathEntry
-        auto graphForPath = evaluateUnionKleene(pe);  // Now pe is non-const and can be modified
-        uint32_t cardinality = graphForPath->getNoEdges();  // Get edge count (cardinality)
-        subpathGraphs.emplace_back(pe, graphForPath, cardinality);
-    }
-
-    // Step 2: Perform iterative joining based on smallest intermediate result
-    while (subpathGraphs.size() > 1) {
-        // Sort subpaths by cardinality (ascending order)
-        std::sort(subpathGraphs.begin(), subpathGraphs.end(),
-                  [](const auto &a, const auto &b) { return std::get<2>(a) < std::get<2>(b); });
-
-        // Take the two subpaths with the smallest cardinalities
-        auto smallest1 = subpathGraphs[0];
-        auto smallest2 = subpathGraphs[1];
-
-        // Join the graphs of the two smallest subpaths
-        auto joinedGraph = join(std::get<1>(smallest1), std::get<1>(smallest2));
-
-        // Calculate the new cardinality of the joined graph
-        uint32_t newCardinality = joinedGraph->getNoEdges();
-
-        // Replace the two smallest subpaths with the new joined graph
-        subpathGraphs.erase(subpathGraphs.begin());
-        subpathGraphs.erase(subpathGraphs.begin());
-        subpathGraphs.emplace_back(PathEntry{}, joinedGraph, newCardinality);  // Dummy PathEntry
-    }
-
-    // Return the final joined graph
-    return std::get<1>(subpathGraphs[0]);
+    return out;
 }
 
 /**
