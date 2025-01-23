@@ -8,6 +8,7 @@
     std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::joinCache;
 
     bool caching = true;
+    bool trans = true;
     bool joining = false;
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
@@ -114,6 +115,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
     auto out = std::make_shared<SimpleGraph>(base);
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
+        trans = false;
         auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
     }
@@ -157,7 +159,7 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
     auto cacheKey = std::make_tuple(left, right);
-    if (joinCache.find(cacheKey) != joinCache.end()) {
+    if (joinCache.find(cacheKey) != joinCache.end() && trans) {
         return joinCache[cacheKey];
     }
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
@@ -226,6 +228,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
         // (left-deep) join
         for(int i = 1; i < path.size(); i++) {
             auto rg  = evaluateUnionKleene(path[i]);
+            trans = true;
             out = join(out, rg);
         }
     }
