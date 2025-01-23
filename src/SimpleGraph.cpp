@@ -222,32 +222,21 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
         std::cout << std::endl;
     }
 
-    // output sizes of the adjacency list and CSR arrays
-    std::cout << "adjacency list size: " << adj.size() << std::endl;
-    
-    std::cout << "row_position_array size: " << row_position_array.size() << std::endl;
-    std::cout << "column_index_array size: " << column_index_array.size() << std::endl;
-    std::cout << "cell_value_array size: " << cell_value_array.size() << std::endl;
-
-    std::cout << "noVertices: " << getNoVertices() << std::endl;
-    std::cout << "noEdges: " << getNoEdges() << std::endl;
-    std::cout << "noDistinctEdges: " << getNoDistinctEdges() << std::endl;
-
     // output the first elements of each of the arrays
     std::cout << "row_position_array: ";
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 20; i++) {
         std::cout << row_position_array[i] << " ";
     }
     std::cout << std::endl;
 
     std::cout << "column_index_array: ";
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 20; i++) {
         std::cout << column_index_array[i] << " ";
     }
     std::cout << std::endl;
 
     std::cout << "cell_value_array: ";
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 20; i++) {
         std::cout << cell_value_array[i] << " ";
     }
     std::cout << std::endl;
