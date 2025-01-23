@@ -92,6 +92,14 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
         auto delta = join(out, base);
+
+        // number of edges in the delta
+        uint32_t numEdges = 0;
+        for(uint32_t source = 0; source < delta->getNoVertices(); source++) {
+            numEdges += delta->adj[source].size();
+        }
+        std::cout << "Edges in delta: " << numEdges << std::endl;
+
         numNewAdded = unionDistinct(out, delta);
     }
 

@@ -1,0 +1,107 @@
+Processing query: *,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (2291, 118241, 861)
+Time to evaluate: 104 ms
+
+Processing query: 3,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 170, 170)
+Time to evaluate: 93 ms
+
+Processing query: 12,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 454, 454)
+Time to evaluate: 94 ms
+
+Processing query: 48,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 157, 157)
+Time to evaluate: 94 ms
+
+Processing query: *,0>/1>/2>/2>/3>,4
+Actual (noOut, noPaths, noIn) : (275, 275, 1)
+Time to evaluate: 92 ms
+
+Processing query: *,0>/1>/2>/2>/3>,13
+Actual (noOut, noPaths, noIn) : (73, 73, 1)
+Time to evaluate: 91 ms
+
+Processing query: *,0>/1>/2>/2>/3>,47
+Actual (noOut, noPaths, noIn) : (185, 185, 1)
+Time to evaluate: 91 ms
+
+Processing query: *,0>/1>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (2368, 25841, 270)
+Time to evaluate: 48 ms
+
+Processing query: *,0>,*
+Actual (noOut, noPaths, noIn) : (3841, 7067, 4000)
+Time to evaluate: 5 ms
+
+Processing query: *,0>/0<,*
+Actual (noOut, noPaths, noIn) : (3841, 78917, 3841)
+Time to evaluate: 37 ms
+
+Processing query: *,0>/0</0>,*
+Actual (noOut, noPaths, noIn) : (3841, 367675, 4000)
+Time to evaluate: 263 ms
+
+Processing query: 8,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 57, 57)
+Time to evaluate: 90 ms
+
+Processing query: 14,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 26, 26)
+Time to evaluate: 90 ms
+
+Processing query: 31,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 262, 262)
+Time to evaluate: 91 ms
+
+Processing query: 90,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 397, 397)
+Time to evaluate: 90 ms
+
+Processing query: 95,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 362, 362)
+Time to evaluate: 91 ms
+
+Processing query: 132,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 94, 94)
+Time to evaluate: 90 ms
+
+Processing query: 119,0>/1>/2>/2>/3>,*
+Actual (noOut, noPaths, noIn) : (1, 220, 220)
+Time to evaluate: 91 ms
+
+Processing query: *,0>/1>/2>/2>/3>,49
+Actual (noOut, noPaths, noIn) : (605, 605, 1)
+Time to evaluate: 91 ms
+
+Processing query: *,0>/1>/2>/2>/3>,96
+Actual (noOut, noPaths, noIn) : (76, 76, 1)
+Time to evaluate: 90 ms
+
+Processing query: *,0>/1>/2>/2>/3>,133
+Actual (noOut, noPaths, noIn) : (479, 479, 1)
+Time to evaluate: 90 ms
+
+Processing query: *,(0>|1>)+,*
+Actual (noOut, noPaths, noIn) : (6234, 37006, 4491)
+Time to evaluate: 46 ms
+
+Processing query: *,(0>)+,*
+Actual (noOut, noPaths, noIn) : (3841, 7067, 4000)
+Time to evaluate: 8 ms
+
+Processing query: *,(1>)+,*
+Actual (noOut, noPaths, noIn) : (2393, 10460, 491)
+Time to evaluate: 8 ms
+
+Processing query: *,(2>)+,*
+Actual (noOut, noPaths, noIn) : (944, 4065, 968)
+Time to evaluate: 7 ms
+
+Processing query: *,(3>)+,*
+Actual (noOut, noPaths, noIn) : (807, 1907, 1676)
+Time to evaluate: 4 ms
+
+Processing query: *,(0>|1>|2>)+,*
+Actual (noOut, noPaths, noIn) : (7178, 185374, 5459)
+Time to evaluate: 336 ms
