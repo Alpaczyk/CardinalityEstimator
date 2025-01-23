@@ -20,6 +20,7 @@ public:
 
 private:
     uint32_t lastSource;
+    uint32_t highestTarget;
 
 protected:
     uint32_t V;
@@ -43,6 +44,9 @@ public:
 
     void setNoVertices(uint32_t n);
     void setNoLabels(uint32_t noLabels);
+
+private:
+    uint32_t getRowEndIndex(uint32_t source) const;
 
 };
 
