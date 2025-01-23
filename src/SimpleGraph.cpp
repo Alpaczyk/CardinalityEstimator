@@ -14,6 +14,9 @@ SimpleGraph::SimpleGraph(std::shared_ptr<SimpleGraph> &other)   {
 
     V = other->getNoVertices();
     L = other->getNoLabels();
+
+    lastSource = other->lastSource;
+    highestTarget = other->highestTarget;
 }
 
 uint32_t SimpleGraph::getNoVertices() const {
@@ -57,6 +60,8 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
     // adjacency list representation
     // uint32_t sum = 0;
 
+    // uint32_t source = 0;
+
     // for (auto sourceVec : adj) {
 
     //     std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
@@ -72,9 +77,11 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
     //             prevTarget = labelTgtPair.second;
     //             prevLabel = labelTgtPair.first;
     //         } else {
-    //             std::cout << "Duplicate edge: (" << labelTgtPair.second << "," << labelTgtPair.first << ")" << std::endl;
+    //             std::cout << "Duplicate edge: (" << source << "," << labelTgtPair.second << "," << labelTgtPair.first << ")" << std::endl;
     //         }
     //     }
+
+    //     source++;
     // }
 
     // CSR representation
@@ -92,6 +99,8 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
                 sum++;
                 prevTarget = column_index_array[i];
                 prevLabel = cell_value_array[i];
+            } else {
+                std::cout << "Duplicate edge: (" << source << "," << column_index_array[i] << "," << cell_value_array[i] << ")" << std::endl;
             }
         }
     }
@@ -125,7 +134,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     // for the first edge, set the row_position_array to 0
     if (cell_value_array.size() == 0) {
         // insertion of the first edge
-        // std::cout << "Inserting first edge" << std::endl;
+        if(from == 12 && to == 60) std::cout << "Inserting first edge" << std::endl;
         cell_value_array.push_back(edgeLabel);
         column_index_array.push_back(to);
         
@@ -136,20 +145,20 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
         lastSource = from;
         highestTarget = to;
     } else {
-        // std::cout << "Last source: " << lastSource << std::endl;
-        // std::cout << "Last target: " << highestTarget << std::endl;
+        if(from == 12 && to == 60) std::cout << "Last source: " << lastSource << std::endl;
+        if(from == 12 && to == 60) std::cout << "Last target: " << highestTarget << std::endl;
 
         // if the source vertex is the same as the last source, append the edge data
         if (from == lastSource) {
             if (to > highestTarget || (to == highestTarget && edgeLabel > cell_value_array.back())) {
-                // std::cout << "Simple append edge to same source" << std::endl;
+                if(from == 12 && to == 60) std::cout << "Simple append edge to same source" << std::endl;
                 cell_value_array.push_back(edgeLabel);
                 column_index_array.push_back(to);
 
                 highestTarget = to;
             } else {
                 // find the right position to insert the edge data
-                // std::cout << "Finding position to insert edge for same source" << std::endl;
+                if(from == 12 && to == 60) std::cout << "Finding position to insert edge for same source" << std::endl;
                 uint32_t i = row_position_array[from];
 
                 while (i < cell_value_array.size() && column_index_array[i] < to) {
@@ -165,7 +174,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
                 column_index_array.insert(column_index_array.begin() + i, to);
             }
         } else if (from > lastSource) {
-            // std::cout << "Appending edge with larger source" << std::endl;
+            if(from == 12 && to == 60) std::cout << "Appending edge with larger source" << std::endl;
             // if the source vertex is greater than the last source, append the row_position_array
             cell_value_array.push_back(edgeLabel);
             column_index_array.push_back(to);
@@ -177,7 +186,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
             lastSource = from;
             highestTarget = to;
         } else {
-            // std::cout << "Inserting edge to smaller source" << std::endl;
+            if(from == 12 && to == 60) std::cout << "Inserting edge to smaller source" << std::endl;
 
             // if the source vertex is less than the last source, find the correct position to insert the edge data
             uint32_t i = row_position_array[from];

@@ -93,7 +93,23 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
     while (numNewAdded) {
         auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
-        std::cout << "TC: " << numNewAdded << " new edges added" << std::endl;
+
+        std::cout << "TC: " << numNewAdded << " new edges added." << std::endl;
+
+        for(int source = 0; source < 50; source++) {
+            std::cout << "L" << source << ": ";
+            for (const auto &pair : out->adj[source]) {
+                std::cout << "(" << pair.first << "," << pair.second << ") ";
+            }
+            std::cout << std::endl;
+
+            // output entries for vertex 257 from the arrays
+            std::cout << "A" << source << ": ";
+            for (uint32_t i = out->row_position_array[source]; i < out->row_position_array[source + 1]; i++) {
+                std::cout << "(" << out->cell_value_array[i] << "," << out->column_index_array[i] << ") ";
+            }
+            std::cout << std::endl;
+        }
     }
 
     return out;
@@ -116,6 +132,10 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
             auto target = labelTarget.second;
 
             if(!left->edgeExists(source, target, label)) {
+                if(source == 12 && target == 60) {
+                    std::cout << "Adding edge (" << source << "," << target << "," << label << ")" << std::endl;
+                }
+
                 left->addEdge(source, target, label);
                 numNewAdded++;
             }
