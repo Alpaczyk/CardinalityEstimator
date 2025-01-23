@@ -5,7 +5,7 @@
 
     std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
     std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
-    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::joinCache;
+    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::joinCache;
 
     bool caching = true;
     bool trans = true;
@@ -115,8 +115,8 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
     auto out = std::make_shared<SimpleGraph>(base);
     uint32_t numNewAdded = 1;
     while (numNewAdded) {
-        trans = false;
-        auto delta = join(out, base);
+        joinCache.erase(std::make_tuple(out, base, trans));
+        auto delta = join(out, base, trans);
         numNewAdded = unionDistinct(out, delta);
     }
 
@@ -157,9 +157,9 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  * @param right Another graph to join with.
  * @return Answer graph for a join. Note that all labels in the answer graph are "0".
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
-    auto cacheKey = std::make_tuple(left, right);
-    if (joinCache.find(cacheKey) != joinCache.end() && trans) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right, bool &trans) {
+    auto cacheKey = std::make_tuple(left, right, trans);
+    if (joinCache.find(cacheKey) != joinCache.end()) {
         return joinCache[cacheKey];
     }
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
@@ -229,7 +229,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
         for(int i = 1; i < path.size(); i++) {
             auto rg  = evaluateUnionKleene(path[i]);
             trans = true;
-            out = join(out, rg);
+            out = join(out, rg, trans);
         }
     }
 

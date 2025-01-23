@@ -31,9 +31,9 @@ namespace std {
         }
     };
     template <>
-     struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>> {
-        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>& key) const {
-            auto& [graph, graph2] = key;
+     struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>> {
+        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>& key) const {
+            auto& [graph, graph2, trans] = key;
             size_t seed = 0;
 
             // Hash the shared pointer's address
@@ -41,6 +41,7 @@ namespace std {
 
             seed ^= std::hash<void*>()(graph2.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
+            seed ^= std::hash<bool>()(trans) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             return seed;
         }
     };
@@ -51,7 +52,7 @@ class SimpleEvaluator : public Evaluator {
     std::shared_ptr<SimpleEstimator> est;
     static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> selectLabelCache;
     static std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> transitiveClosureCache;
-    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>>, std::shared_ptr<SimpleGraph>> joinCache;
+    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>, std::shared_ptr<SimpleGraph>> joinCache;
 
 
 public:
@@ -68,7 +69,7 @@ public:
     std::shared_ptr<SimpleGraph> evaluateUnionKleene(PathEntry &pe);
 
     static std::shared_ptr<SimpleGraph> selectLabel(uint32_t projectLabel, uint32_t outLabel,bool join, bool inverse, std::shared_ptr<SimpleGraph> &in);
-    static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
+    static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right, bool &trans);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
     static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static void invalidateCaches(std::shared_ptr<SimpleGraph> &g);
