@@ -9,43 +9,52 @@
 #include "Graph.h"
 #include <tuple>
 #include <functional>
+struct TupleHash {
+    template <typename T>
+    void hashCombine(size_t& seed, const T& value) const {
+        seed ^= std::hash<T>()(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>& key) const {
+        auto& [graph, label, join, inverse] = key;
+        size_t seed = 0;
+
+        hashCombine(seed, std::hash<std::shared_ptr<SimpleGraph>>()(graph)); // Hash graph
+        hashCombine(seed, std::hash<uint32_t>()(label));                    // Hash label
+        hashCombine(seed, join ? 1231 : 1237);                              // Hash booleans
+        hashCombine(seed, inverse ? 1231 : 1237);
+
+        return seed;
+    }
+
+    size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>& key) const {
+        auto& [graph1, graph2, trans] = key;
+        size_t seed = 0;
+
+        hashCombine(seed, std::hash<std::shared_ptr<SimpleGraph>>()(graph1)); // Hash first graph
+        hashCombine(seed, std::hash<std::shared_ptr<SimpleGraph>>()(graph2)); // Hash second graph
+        hashCombine(seed, trans ? 1231 : 1237);                               // Hash boolean
+
+        return seed;
+    }
+};
 
 namespace std {
-    // Custom hash function for std::tuple
     template <>
-    struct hash<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t,bool, bool>> {
+    struct hash<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>> {
         size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>& key) const {
-            auto& [graph, label,join, inverse] = key;
-            size_t seed = 0;
-
-            // Hash the shared pointer's address
-            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the label
-            seed ^= std::hash<uint32_t>()(label) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the boolean value
-            seed ^= std::hash<bool>()(join) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the boolean value
-            seed ^= std::hash<bool>()(inverse) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-            return seed;
+            return TupleHash()(key);
         }
     };
+
     template <>
-     struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>> {
+    struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>> {
         size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>& key) const {
-            auto& [graph, graph2, trans] = key;
-            size_t seed = 0;
-
-            // Hash the shared pointer's address
-            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-            seed ^= std::hash<void*>()(graph2.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-            seed ^= std::hash<bool>()(trans) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            return seed;
+            return TupleHash()(key);
         }
     };
 }
+
 class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
