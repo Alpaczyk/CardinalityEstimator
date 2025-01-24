@@ -81,107 +81,21 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
 }
 
 /**
- * Perform a selection on a source constant.
- * @param s A source constant.
- * @param in A graph to select from.
- * @return An answer graph as a result of the given selection.
- */
-std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
-
-    auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
-    out->setNoLabels(in->getNoLabels());
-
-    for (auto labelTarget : in->adj[s]) {
-
-        auto label = labelTarget.first;
-        auto target = labelTarget.second;
-
-        out->addEdge(s, target, label);
-    }
-
-    return out;
-}
-
-/**
- * Perform a selection on a target constant.
- * @param s A target constant.
- * @param in A graph to select from.
- * @return An answer graph as a result of the given selection.
- */
-std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
-
-    auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
-    out->setNoLabels(in->getNoLabels());
-
-    for (auto labelSource : in->reverse_adj[t]) {
-
-        auto label = labelSource.first;
-        auto source = labelSource.second;
-        out->addEdge(source, t, label);
-    }
-
-    return out;
-}
-
-// Helper functions for the transitive closure computation 
-std::shared_ptr<SimpleGraph> SimpleEvaluator::crank(std::shared_ptr<SimpleGraph> &delta, std::shared_ptr<SimpleGraph> &TC) {
-    auto newDelta = std::make_shared<SimpleGraph>(delta->getNoVertices());
-    newDelta->setNoLabels(delta->getNoLabels());
-
-    // Iterate over all edges in delta
-    for (uint32_t x = 0; x < delta->getNoVertices(); ++x) {
-        for (const auto &[labelZ, z] : delta->adj[x]) {
-            for (const auto &[labelY, y] : TC->adj[z]) {
-                // Combine edges (x → z) and (z → y) to form (x → y)
-                if (labelZ == labelY || labelZ == 0 || labelY == 0) {
-                    newDelta->addEdge(x, y, labelZ);
-                }
-            }
-        }
-    }
-
-    return newDelta;
-}
-
-std::shared_ptr<SimpleGraph> SimpleEvaluator::reduce(std::shared_ptr<SimpleGraph> &newDelta, std::shared_ptr<SimpleGraph> &TC) {
-    auto reducedDelta = std::make_shared<SimpleGraph>(newDelta->getNoVertices());
-    reducedDelta->setNoLabels(newDelta->getNoLabels());
-
-    // Iterate over all edges in newDelta
-    for (uint32_t x = 0; x < newDelta->getNoVertices(); ++x) {
-        for (const auto &[label, y] : newDelta->adj[x]) {
-            // Only add (x, y) if it does not already exist in cumulativeTC
-            if (!TC->edgeExists(x, y, label)) {
-                reducedDelta->addEdge(x, y, label);
-            }
-        }
-    }
-
-    return reducedDelta;
-}
-
-/**
- * A SMART transitive closure (TC) computation.
+ * A naive transitive closure (TC) computation.
  * @param in Input graph
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-    // Step 1: Initialization
-    auto delta = std::make_shared<SimpleGraph>(base);
-    auto TC = std::make_shared<SimpleGraph>(base);
-    uint32_t i = 0;
 
-    // Step 2: Iterative Process
-    while (delta->getNoEdges() > 0) {
-        auto newDelta = crank(delta, TC); // Breadth-first approach to extend the partial TC
-        auto reducedDelta = reduce(newDelta, TC); // Removes duplicate tuples 
-        unionDistinct(TC, reducedDelta); // Cache results
-        delta = reducedDelta; // Update delta
-        i++;
+    auto out = std::make_shared<SimpleGraph>(base);
+
+    uint32_t numNewAdded = 1;
+    while (numNewAdded) {
+        auto delta = join(out, base);
+        numNewAdded = unionDistinct(out, delta);
     }
 
-    // Step 3: Return the transitive closure
-    return TC;
+    return out;
 }
 
 /**
@@ -269,69 +183,134 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
-    // Vector to store subpath, corresponding graph, and cardinality
-    std::vector<std::tuple<PathEntry, std::shared_ptr<SimpleGraph>, uint32_t>> subpathGraphs;
 
-    // Step 1: Evaluate each path entry individually and store its cardinality
-    for (size_t i = 0; i < path.size(); i++) {
-        auto pe = path[i];
-        auto graphForPath = evaluateUnionKleene(const_cast<PathEntry&>(pe));  // Evaluate graph
+    // Vector to store intermediate results
+    std::vector<std::shared_ptr<SimpleGraph>> partialResults;
+    std::vector<std::pair<int, cardStat>> estimatedCardinalities; // Store cardinalities for each segment
 
-        // Apply source filter to the first path entry
-        if (i == 0 && s != NO_IDENTIFIER) {
-            graphForPath = selectSource(s, graphForPath);
+    // Step 1: Evaluate and store the cardinalities of each path segment
+    if (est != nullptr) {
+        for (int i = 0; i < path.size(); i++) {
+            // Wrap the path segment in a dummy Triple object
+            Triple q;
+            q.src = (i == 0) ? s : NO_IDENTIFIER;  // Use source if first segment
+            q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
+            q.path = {path[i]}; // Use the current segment as the path
+
+            // Estimate cardinality
+            cardStat estimate = est->estimate(q);
+            estimatedCardinalities.emplace_back(i, estimate);
+
+            // Print the estimated cardinality for debugging
+            // std::cout << " " << std::endl;
+            // std::cout << "Path segment " << i << ": "
+            //           << "noOut = " << estimate.noOut << ", "
+            //           << "noPaths = " << estimate.noPaths << ", "
+            //           << "noIn = " << estimate.noIn << std::endl;
         }
-
-        // Apply target filter to the last path entry
-        if (i == path.size() - 1 && t != NO_IDENTIFIER) {
-            graphForPath = selectTarget(t, graphForPath);
-        }
-
-        uint32_t cardinality = graphForPath->getNoEdges();  // Get edge count (cardinality)
-        subpathGraphs.emplace_back(pe, graphForPath, cardinality);
     }
 
-    // Step 2: Iteratively join graphs based on the lowest cardinality result of adjacent segments
-    while (subpathGraphs.size() > 1) {
-        size_t minIndex = 0;
-        uint64_t minCost = UINT64_MAX;
+    // Step 2: Precompute partial graphs for all path segments
+    for (int i = 0; i < path.size(); i++) {
+        partialResults.push_back(evaluateUnionKleene(path[i]));
+    }
 
-        // Find the pair of adjacent subpaths with the smallest join cost
-        for (size_t i = 0; i < subpathGraphs.size() - 1; i++) {
-            uint32_t leftCardinality = std::get<2>(subpathGraphs[i]);
-            uint32_t rightCardinality = std::get<2>(subpathGraphs[i + 1]);
-            uint64_t joinCost = static_cast<uint64_t>(leftCardinality) * rightCardinality;
+    // Step 3: Iteratively join the path segments with the lowest estimated cardinality
+    while (partialResults.size() > 1) {
+        size_t bestPairIndex = 0;
+        uint64_t bestCost = UINT64_MAX;
 
-            if (joinCost < minCost) {
-                minCost = joinCost;
-                minIndex = i;  // Store the index of the left graph in the pair
+        // Find the pair of *adjacent* path segments with the lowest estimated join cost
+        for (size_t i = 0; i < estimatedCardinalities.size() - 1; i++) {
+            uint64_t joinCost = std::min(
+                estimatedCardinalities[i].second.noPaths,
+                estimatedCardinalities[i + 1].second.noPaths);
+
+            if (joinCost < bestCost) {
+                bestCost = joinCost;
+                bestPairIndex = i;
             }
         }
 
-        // Join the two graphs with the smallest cost
-        auto leftGraph = std::get<1>(subpathGraphs[minIndex]);
-        auto rightGraph = std::get<1>(subpathGraphs[minIndex + 1]);
-        auto joinedGraph = join(leftGraph, rightGraph);
+        // Join the two segments with the lowest cost
+        auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
 
-        // Calculate the new cardinality of the joined graph
-        uint32_t newCardinality = joinedGraph->getNoEdges();
+        // Step 4: Re-estimate the cardinality of the newly joined segment
+        if (est != nullptr) {
+            Triple q;
+            q.src = (bestPairIndex == 0) ? s : NO_IDENTIFIER; // Use source if first segment
+            q.trg = (bestPairIndex + 1 == partialResults.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
 
-        // Create a new combined PathEntry
-        PathEntry combinedPath;
-        combinedPath.labels.insert(combinedPath.labels.end(),
-                                   std::get<0>(subpathGraphs[minIndex]).labels.begin(),
-                                   std::get<0>(subpathGraphs[minIndex]).labels.end());
-        combinedPath.labels.insert(combinedPath.labels.end(),
-                                   std::get<0>(subpathGraphs[minIndex + 1]).labels.begin(),
-                                   std::get<0>(subpathGraphs[minIndex + 1]).labels.end());
+            // Create a combined path for re-estimation
+            q.path.clear();
+            for (int i = bestPairIndex; i <= bestPairIndex + 1; i++) {
+                q.path.push_back(path[estimatedCardinalities[i].first]);
+            }
 
-        // Replace the two adjacent subpaths with the new combined graph and path entry
-        subpathGraphs[minIndex] = std::make_tuple(combinedPath, joinedGraph, newCardinality);
-        subpathGraphs.erase(subpathGraphs.begin() + minIndex + 1);
+            cardStat newEstimate = est->estimate(q);
+
+            // Print the re-estimated cardinality for debugging
+            // std::cout << " " << std::endl;
+            // std::cout << "Joined path segment [" << bestPairIndex << ", " << bestPairIndex + 1 << "]: "
+            //           << "noOut = " << newEstimate.noOut << ", "
+            //           << "noPaths = " << newEstimate.noPaths << ", "
+            //           << "noIn = " << newEstimate.noIn << std::endl;
+
+            // Update the cardinality information
+            estimatedCardinalities[bestPairIndex] = {bestPairIndex, newEstimate};
+        }
+
+        // Update partial results and remove the used segment
+        partialResults[bestPairIndex] = joinedGraph;
+        partialResults.erase(partialResults.begin() + bestPairIndex + 1);
+        estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
     }
 
-    // Return the final joined graph
-    return std::get<1>(subpathGraphs[0]);
+    // Step 5: Return the final joined graph
+    return partialResults[0];
+}
+
+/**
+ * Perform a selection on a source constant.
+ * @param s A source constant.
+ * @param in A graph to select from.
+ * @return An answer graph as a result of the given selection.
+ */
+std::shared_ptr<SimpleGraph> selectSource(Identifier &s, std::shared_ptr<SimpleGraph> &in) {
+
+    auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
+    out->setNoLabels(in->getNoLabels());
+
+    for (auto labelTarget : in->adj[s]) {
+
+        auto label = labelTarget.first;
+        auto target = labelTarget.second;
+
+        out->addEdge(s, target, label);
+    }
+
+    return out;
+}
+
+/**
+ * Perform a selection on a target constant.
+ * @param s A target constant.
+ * @param in A graph to select from.
+ * @return An answer graph as a result of the given selection.
+ */
+std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleGraph> &in) {
+
+    auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
+    out->setNoLabels(in->getNoLabels());
+
+    for (auto labelSource : in->reverse_adj[t]) {
+
+        auto label = labelSource.first;
+        auto source = labelSource.second;
+        out->addEdge(source, t, label);
+    }
+
+    return out;
 }
 
 /**
