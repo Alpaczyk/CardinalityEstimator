@@ -25,6 +25,14 @@ std::unordered_map<uint32_t, std::vector<std::pair<std::pair<uint32_t, uint32_t>
                       return a.first < b.first; // Ascending order by source value
                   });
 
+        auto it = std::unique(sortedSources.begin(), sortedSources.end(),
+                      [](const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) {
+                          return a.first == b.first; // Define duplicates as having the same first value
+                      });
+
+        // Step 3: Erase the remaining duplicates from the vector
+        sortedSources.erase(it, sortedSources.end());
+
         // Step 2: Calculate total count of items
         uint32_t totalItems = 0;
         for (const auto& sourceEntry : sortedSources) {
@@ -179,12 +187,11 @@ cardStat SimpleEstimator::estimate(Triple &q) {
                 } else {
                     // For subsequent labels, update prevMin and accumulate into noPaths
                     prevMin = std::min(prevMin, std::min(noOutLabel, noInLabel));
-                    if (q.path[i].kleene) {
-                        noPaths += noOutLabel * (1 + prevMin); // Accumulate paths correctly
-                    } else {
-                        noPaths += prevMin;
+                    if(q.path[i].kleene) {
+                        prevMin += noOutLabel;
+                        noPaths += noOutLabel;
                     }
-
+                    noPaths += prevMin;
                 }
             }
             noIn = prevMin;
