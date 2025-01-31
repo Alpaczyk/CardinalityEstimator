@@ -182,75 +182,20 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @param q Parsed AST.
  * @return Solution as a graph.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
-    std::vector<std::shared_ptr<SimpleGraph>> partialResults;
-    std::vector<std::pair<int, cardStat>> estimatedCardinalities;
+std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
 
-    // Step 1: Evaluate and store the cardinalities of each path segment, considering bounded queries
-    if (est != nullptr) {
-        for (int i = 0; i < path.size(); i++) {
-            Triple q;
-            q.src = (i == 0) ? s : NO_IDENTIFIER;  // Use source if first segment
-            q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
-
-            // If it's a bounded query, take the source or target into account
-            if (i == 0 && s != NO_IDENTIFIER) {
-                q.src = s;
-            }
-            if (i == path.size() - 1 && t != NO_IDENTIFIER) {
-                q.trg = t;
-            }
-            
-            q.path = {path[i]};
-            cardStat estimate = est->estimate(q);
-            estimatedCardinalities.emplace_back(i, estimate);
+    auto out  = evaluateUnionKleene(path[0]);
+    // evaluate according to the AST top-down
+    // 1. evaluate concatenations
+    if(path.size() > 1) {
+        // (left-deep) join
+        for(int i = 1; i < path.size(); i++) {
+            auto rg  = evaluateUnionKleene(path[i]);
+            out = join(out, rg);
         }
     }
 
-    // Step 2: Precompute partial graphs for all path segments
-    for (int i = 0; i < path.size(); i++) {
-        partialResults.push_back(evaluateUnionKleene(path[i]));
-    }
-
-    // Step 3: Iteratively join the path segments with the lowest estimated cardinality
-    while (partialResults.size() > 1) {
-        size_t bestPairIndex = 0;
-        uint64_t bestCost = UINT64_MAX;
-
-        for (size_t i = 0; i < estimatedCardinalities.size() - 1; i++) {
-            uint64_t joinCost = std::min(
-                estimatedCardinalities[i].second.noPaths,
-                estimatedCardinalities[i + 1].second.noPaths);
-
-            if (joinCost < bestCost) {
-                bestCost = joinCost;
-                bestPairIndex = i;
-            }
-        }
-
-        auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
-
-        // Step 4: Re-estimate the cardinality of the newly joined segment
-        if (est != nullptr) {
-            Triple q;
-            q.src = (bestPairIndex == 0) ? s : NO_IDENTIFIER;
-            q.trg = (bestPairIndex + 1 == partialResults.size() - 1) ? t : NO_IDENTIFIER;
-
-            q.path.clear();
-            for (int i = bestPairIndex; i <= bestPairIndex + 1; i++) {
-                q.path.push_back(path[estimatedCardinalities[i].first]);
-            }
-
-            cardStat newEstimate = est->estimate(q);
-            estimatedCardinalities[bestPairIndex] = {bestPairIndex, newEstimate};
-        }
-
-        partialResults[bestPairIndex] = joinedGraph;
-        partialResults.erase(partialResults.begin() + bestPairIndex + 1);
-        estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
-    }
-
-    return partialResults[0];
+    return out;
 }
 
 /**
@@ -302,7 +247,7 @@ std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleG
  * @return A cardinality statistics of the answer graph.
  */
 cardStat SimpleEvaluator::evaluate(Triple &query) {
-    auto res = evaluateConcat(query.src, query.path, query.trg);
+    auto res = evaluateConcat(query.path);
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
     return SimpleEvaluator::computeStats(res);
