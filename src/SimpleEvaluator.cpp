@@ -182,7 +182,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @param q Parsed AST.
  * @return Solution as a graph.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
 
     auto out  = evaluateUnionKleene(path[0]);
     // evaluate according to the AST top-down
@@ -247,7 +247,7 @@ std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleG
  * @return A cardinality statistics of the answer graph.
  */
 cardStat SimpleEvaluator::evaluate(Triple &query) {
-    auto res = evaluateConcat(query.path);
+    auto res = evaluateConcat(query.src, query.path, query.trg);
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
     return SimpleEvaluator::computeStats(res);
