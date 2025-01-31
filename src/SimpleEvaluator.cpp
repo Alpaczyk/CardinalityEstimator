@@ -183,10 +183,11 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
-    std::vector<std::shared_ptr<SimpleGraph>> partialResults;
     std::vector<uint64_t> estimatedCardinalities;
+    std::vector<std::shared_ptr<SimpleGraph>> partialResults;
+    std::vector<std::vector<PathEntry>> remainingPaths; // Store sequences of path segments
 
-    // Step 1: Evaluate cardinalities of each path segment (considering bounded queries)
+    // Step 1: Compute estimated cardinalities for individual path segments
     if (est != nullptr) {
         for (int i = 0; i < path.size(); i++) {
             Triple q;
@@ -202,8 +203,11 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
 
             q.path = {path[i]};
             cardStat estimate = est->estimate(q);
+
             estimatedCardinalities.push_back(estimate.noPaths);
             partialResults.push_back(evaluateUnionKleene(path[i]));
+
+            remainingPaths.push_back({path[i]}); // Store path segment separately
         }
     }
 
@@ -224,14 +228,23 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
         auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
 
         // Step 3: Recalculate cardinality of the new joined segment
-        uint64_t newCardinality = joinedGraph->getNoDistinctEdges();
+        uint64_t newCardinality = joinedGraph->getNoEdges();
 
-        // Update the lists
+        // Update estimated cardinalities and partial results
         estimatedCardinalities[bestPairIndex] = newCardinality;
         partialResults[bestPairIndex] = joinedGraph;
 
+        // Merge paths by simply appending the right segment to the left one
+        remainingPaths[bestPairIndex].insert(
+            remainingPaths[bestPairIndex].end(),
+            remainingPaths[bestPairIndex + 1].begin(),
+            remainingPaths[bestPairIndex + 1].end()
+        );
+
+        // Remove the second element from lists
         estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
         partialResults.erase(partialResults.begin() + bestPairIndex + 1);
+        remainingPaths.erase(remainingPaths.begin() + bestPairIndex + 1);
     }
 
     return partialResults[0];
