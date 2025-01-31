@@ -183,30 +183,27 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
-
-    // Vector to store intermediate results
     std::vector<std::shared_ptr<SimpleGraph>> partialResults;
-    std::vector<std::pair<int, cardStat>> estimatedCardinalities; // Store cardinalities for each segment
+    std::vector<std::pair<int, cardStat>> estimatedCardinalities;
 
-    // Step 1: Evaluate and store the cardinalities of each path segment
+    // Step 1: Evaluate and store the cardinalities of each path segment, considering bounded queries
     if (est != nullptr) {
         for (int i = 0; i < path.size(); i++) {
-            // Wrap the path segment in a dummy Triple object
             Triple q;
             q.src = (i == 0) ? s : NO_IDENTIFIER;  // Use source if first segment
             q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
-            q.path = {path[i]}; // Use the current segment as the path
 
-            // Estimate cardinality
+            // If it's a bounded query, take the source or target into account
+            if (i == 0 && s != NO_IDENTIFIER) {
+                q.src = s;
+            }
+            if (i == path.size() - 1 && t != NO_IDENTIFIER) {
+                q.trg = t;
+            }
+            
+            q.path = {path[i]};
             cardStat estimate = est->estimate(q);
             estimatedCardinalities.emplace_back(i, estimate);
-
-            // Print the estimated cardinality for debugging
-            // std::cout << " " << std::endl;
-            // std::cout << "Path segment " << i << ": "
-            //           << "noOut = " << estimate.noOut << ", "
-            //           << "noPaths = " << estimate.noPaths << ", "
-            //           << "noIn = " << estimate.noIn << std::endl;
         }
     }
 
@@ -220,7 +217,6 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
         size_t bestPairIndex = 0;
         uint64_t bestCost = UINT64_MAX;
 
-        // Find the pair of *adjacent* path segments with the lowest estimated join cost
         for (size_t i = 0; i < estimatedCardinalities.size() - 1; i++) {
             uint64_t joinCost = std::min(
                 estimatedCardinalities[i].second.noPaths,
@@ -232,41 +228,28 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
             }
         }
 
-        // Join the two segments with the lowest cost
         auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
 
         // Step 4: Re-estimate the cardinality of the newly joined segment
         if (est != nullptr) {
             Triple q;
-            q.src = (bestPairIndex == 0) ? s : NO_IDENTIFIER; // Use source if first segment
-            q.trg = (bestPairIndex + 1 == partialResults.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
+            q.src = (bestPairIndex == 0) ? s : NO_IDENTIFIER;
+            q.trg = (bestPairIndex + 1 == partialResults.size() - 1) ? t : NO_IDENTIFIER;
 
-            // Create a combined path for re-estimation
             q.path.clear();
             for (int i = bestPairIndex; i <= bestPairIndex + 1; i++) {
                 q.path.push_back(path[estimatedCardinalities[i].first]);
             }
 
             cardStat newEstimate = est->estimate(q);
-
-            // Print the re-estimated cardinality for debugging
-            // std::cout << " " << std::endl;
-            // std::cout << "Joined path segment [" << bestPairIndex << ", " << bestPairIndex + 1 << "]: "
-            //           << "noOut = " << newEstimate.noOut << ", "
-            //           << "noPaths = " << newEstimate.noPaths << ", "
-            //           << "noIn = " << newEstimate.noIn << std::endl;
-
-            // Update the cardinality information
             estimatedCardinalities[bestPairIndex] = {bestPairIndex, newEstimate};
         }
 
-        // Update partial results and remove the used segment
         partialResults[bestPairIndex] = joinedGraph;
         partialResults.erase(partialResults.begin() + bestPairIndex + 1);
         estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
     }
 
-    // Step 5: Return the final joined graph
     return partialResults[0];
 }
 

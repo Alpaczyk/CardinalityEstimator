@@ -7,3 +7,4 @@ quicksilver workload/real/1/graph.nt workload/real/1/queries.csv
 quicksilver workload/syn/1/graph.nt workload/syn/1/queries.csv
 quicksilver workload/syn/1/graph.nt workload/syn/1/queries2.csv
 quicksilver workload/syn/1/graph.nt workload/syn/1/queries3.csv
+quicksilver workload/syn/1/graph.nt workload/syn/1/queries4.csv
