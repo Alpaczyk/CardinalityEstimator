@@ -184,70 +184,54 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
     std::vector<std::shared_ptr<SimpleGraph>> partialResults;
-    std::vector<std::pair<int, cardStat>> estimatedCardinalities;
+    std::vector<uint64_t> estimatedCardinalities;
 
-    // Step 1: Evaluate and store the cardinalities of each path segment, considering bounded queries
+    // Step 1: Evaluate cardinalities of each path segment (considering bounded queries)
     if (est != nullptr) {
         for (int i = 0; i < path.size(); i++) {
             Triple q;
-            q.src = (i == 0) ? s : NO_IDENTIFIER;  // Use source if first segment
-            q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER; // Use target if last segment
+            q.src = (i == 0) ? s : NO_IDENTIFIER;
+            q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER;
 
-            // If it's a bounded query, take the source or target into account
             if (i == 0 && s != NO_IDENTIFIER) {
                 q.src = s;
             }
             if (i == path.size() - 1 && t != NO_IDENTIFIER) {
                 q.trg = t;
             }
-            
+
             q.path = {path[i]};
             cardStat estimate = est->estimate(q);
-            estimatedCardinalities.emplace_back(i, estimate);
+            estimatedCardinalities.push_back(estimate.noPaths);
+            partialResults.push_back(evaluateUnionKleene(path[i]));
         }
     }
 
-    // Step 2: Precompute partial graphs for all path segments
-    for (int i = 0; i < path.size(); i++) {
-        partialResults.push_back(evaluateUnionKleene(path[i]));
-    }
-
-    // Step 3: Iteratively join the path segments with the lowest estimated cardinality
+    // Step 2: Iteratively join the adjacent segments with the lowest cost
     while (partialResults.size() > 1) {
         size_t bestPairIndex = 0;
         uint64_t bestCost = UINT64_MAX;
 
         for (size_t i = 0; i < estimatedCardinalities.size() - 1; i++) {
-            uint64_t joinCost = std::min(
-                estimatedCardinalities[i].second.noPaths,
-                estimatedCardinalities[i + 1].second.noPaths);
-
+            uint64_t joinCost = estimatedCardinalities[i] * estimatedCardinalities[i + 1];
             if (joinCost < bestCost) {
                 bestCost = joinCost;
                 bestPairIndex = i;
             }
         }
 
+        // Join the best pair
         auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
 
-        // Step 4: Re-estimate the cardinality of the newly joined segment
-        if (est != nullptr) {
-            Triple q;
-            q.src = (bestPairIndex == 0) ? s : NO_IDENTIFIER;
-            q.trg = (bestPairIndex + 1 == partialResults.size() - 1) ? t : NO_IDENTIFIER;
+        // Step 3: Recalculate cardinality of the new joined segment
+        uint64_t newCardinality = joinedGraph->getNoDistinctEdges();
 
-            q.path.clear();
-            for (int i = bestPairIndex; i <= bestPairIndex + 1; i++) {
-                q.path.push_back(path[estimatedCardinalities[i].first]);
-            }
-
-            cardStat newEstimate = est->estimate(q);
-            estimatedCardinalities[bestPairIndex] = {bestPairIndex, newEstimate};
-        }
-
+        // Update the lists
+        estimatedCardinalities[bestPairIndex] = newCardinality;
         partialResults[bestPairIndex] = joinedGraph;
-        partialResults.erase(partialResults.begin() + bestPairIndex + 1);
+
         estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
+        partialResults.erase(partialResults.begin() + bestPairIndex + 1);
     }
 
     return partialResults[0];
