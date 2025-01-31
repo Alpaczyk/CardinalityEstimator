@@ -187,6 +187,8 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
     std::vector<std::shared_ptr<SimpleGraph>> partialResults; // Store intermediate results of path segments
     std::vector<std::vector<PathEntry>> remainingPaths; // Store sequences of path segments
 
+    //std::cout << std::endl;
+
     // Step 1: Compute estimated cardinalities for individual path segments
     if (est != nullptr) {
         for (int i = 0; i < path.size(); i++) {
@@ -208,6 +210,9 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
             partialResults.push_back(evaluateUnionKleene(path[i])); // Store partial result
 
             remainingPaths.push_back({path[i]}); // Store path segment separately
+            
+            //std::cout << "Segment " << i << " -> Cardinality: " << estimate.noPaths << "\n";
+
         }
     }
 
@@ -224,11 +229,17 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
             }
         }
 
+        // Print which segments are being merged
+        //std::cout << "Merging segments [" << bestPairIndex << "] and [" << bestPairIndex + 1 << "]\n";
+        //std::cout << "Join cost: " << bestCost << "\n";
+
         // Join the best pair
         auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
 
         // Step 3: Recalculate cardinality of the new joined segment
         uint64_t newCardinality = joinedGraph->getNoEdges();
+    
+        //std::cout << "New segment cardinality after join: " << newCardinality << "\n\n";
 
         // Update estimated cardinalities and partial results
         estimatedCardinalities[bestPairIndex] = newCardinality;
