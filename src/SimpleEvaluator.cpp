@@ -183,8 +183,8 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @return Solution as a graph.
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
-    std::vector<uint64_t> estimatedCardinalities;
-    std::vector<std::shared_ptr<SimpleGraph>> partialResults;
+    std::vector<uint64_t> estimatedCardinalities; // Stores estimated cardinalities of path segments
+    std::vector<std::shared_ptr<SimpleGraph>> partialResults; // Store intermediate results of path segments
     std::vector<std::vector<PathEntry>> remainingPaths; // Store sequences of path segments
 
     // Step 1: Compute estimated cardinalities for individual path segments
@@ -194,18 +194,18 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std:
             q.src = (i == 0) ? s : NO_IDENTIFIER;
             q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER;
 
-            if (i == 0 && s != NO_IDENTIFIER) {
+            if (i == 0 && s != NO_IDENTIFIER) { // If source is specified, use it
                 q.src = s;
             }
-            if (i == path.size() - 1 && t != NO_IDENTIFIER) {
+            if (i == path.size() - 1 && t != NO_IDENTIFIER) { // If target is specified, use it
                 q.trg = t;
             }
 
             q.path = {path[i]};
             cardStat estimate = est->estimate(q);
 
-            estimatedCardinalities.push_back(estimate.noPaths);
-            partialResults.push_back(evaluateUnionKleene(path[i]));
+            estimatedCardinalities.push_back(estimate.noPaths); // Store estimated cardinality
+            partialResults.push_back(evaluateUnionKleene(path[i])); // Store partial result
 
             remainingPaths.push_back({path[i]}); // Store path segment separately
         }
