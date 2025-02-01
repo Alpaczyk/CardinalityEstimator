@@ -61,9 +61,11 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
 std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
     auto cacheKey = std::make_tuple(in, projectLabel,join, inverse);
-    std::shared_ptr<SimpleGraph> pos = selectCache.get(cacheKey);
-    if(pos != nullptr && caching) {
-        return pos;
+    if(caching) {
+        std::shared_ptr<SimpleGraph> pos = selectCache.get(cacheKey);
+        if(pos != nullptr) {
+            return pos;
+        }
     }
     // std::cout << selectLabelCache.size() << "\n";
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
@@ -155,9 +157,11 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
 std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
 
     auto cacheKey = std::make_tuple(left, right);
-    std::shared_ptr<SimpleGraph> pos = joiningCache.get(cacheKey);
-    if(pos != nullptr && trans) {
-        return pos;
+    if(trans) {
+        std::shared_ptr<SimpleGraph> pos = joiningCache.get(cacheKey);
+        if(pos != nullptr) {
+            return pos;
+        }
     }
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
