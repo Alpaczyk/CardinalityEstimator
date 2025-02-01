@@ -1,23 +1,24 @@
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
-#include <unordered_map>
-#include <tuple>
 
-    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::selectLabelCache;
-    std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::transitiveClosureCache;
-    std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>, std::shared_ptr<SimpleGraph>> SimpleEvaluator::joinCache;
+#include "LruCacheJoin.h"
+#include "LruCacheSelect.h"
+#include "LruCacheTrans.h"
+LruCacheSelect selectCache = LruCacheSelect(5);
+LruCacheTrans transCache = LruCacheTrans(5);
+LruCacheJoin joiningCache = LruCacheJoin(5);
 
-    bool caching = true;
-    bool trans = true;
-    bool joining = false;
+bool caching = true;
+bool joining = false;
+bool trans = true;
+
+
 
 SimpleEvaluator::SimpleEvaluator(std::shared_ptr<SimpleGraph> &g) {
 
     // works only with SimpleGraph
     graph = g;
     est = nullptr; // estimator not attached by default
-
-
 }
 
 void SimpleEvaluator::attachEstimator(std::shared_ptr<SimpleEstimator> &e) {
@@ -29,37 +30,25 @@ void SimpleEvaluator::prepare() {
     // if attached, prepare the estimator
     if(est != nullptr) est->prepare();
 
-
     // prepare other things here.., if necessary
 
 }
 
 cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
 
-    cardStat stats{};
-    for (int source = 0; source < g->getNoVertices(); source++) {
-        if (!g->adj[source].empty()) stats.noOut++;
+    cardStat stats {};
+    for(int source = 0; source < g->getNoVertices(); source++) {
+        if(!g->adj[source].empty()) stats.noOut++;
     }
 
     stats.noPaths = g->getNoDistinctEdges();
 
-    for (int target = 0; target < g->getNoVertices(); target++) {
-        if (!g->reverse_adj[target].empty()) stats.noIn++;
+    for(int target = 0; target < g->getNoVertices(); target++) {
+        if(!g->reverse_adj[target].empty()) stats.noIn++;
     }
 
     return stats;
 }
-void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
-    for (auto it = selectLabelCache.begin(); it != selectLabelCache.end();) {
-        if (std::get<0>(it->first) == g) {
-            it = selectLabelCache.erase(it);
-        } else {
-            ++it;
-        }
-    }
-    transitiveClosureCache.erase(g);
-}
-
 
 /**
  * Select all edges from a graph with a given edge label.
@@ -69,37 +58,43 @@ void SimpleEvaluator::invalidateCaches(std::shared_ptr<SimpleGraph> &g) {
  * @param in The graph to select from.
  * @return The graph which only has edges with the specified edge label.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel,bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
     auto cacheKey = std::make_tuple(in, projectLabel,join, inverse);
-    if (selectLabelCache.find(cacheKey) != selectLabelCache.end() && caching) {
-        return selectLabelCache[cacheKey];
+    std::shared_ptr<SimpleGraph> pos = selectCache.get(cacheKey);
+    if(pos != nullptr && caching) {
+        return pos;
     }
-
+    // std::cout << selectLabelCache.size() << "\n";
     auto out = std::make_shared<SimpleGraph>(in->getNoVertices());
     out->setNoLabels(in->getNoLabels());
 
-    // Original logic...
-    if (!inverse) {
-        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
+    if(!inverse) {
+        // going forward
+        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->adj[source]) {
-                if (labelTarget.first == projectLabel) {
-                    out->addEdge(source, labelTarget.second, outLabel);
 
-                }
+                auto label = labelTarget.first;
+                auto target = labelTarget.second;
+
+                if (label == projectLabel)
+                    out->addEdge(source, target, outLabel);
             }
         }
     } else {
-        for (uint32_t source = 0; source < in->getNoVertices(); source++) {
+        // going backward
+        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->reverse_adj[source]) {
-                if (labelTarget.first == projectLabel) {
-                    out->addEdge(source, labelTarget.second, outLabel);
-                }
+
+                auto label = labelTarget.first;
+                auto target = labelTarget.second;
+
+                if (label == projectLabel)
+                    out->addEdge(source, target, outLabel);
             }
         }
     }
-
-    selectLabelCache[cacheKey] = out;
+    selectCache.put(cacheKey, out);
     return out;
 }
 
@@ -109,21 +104,21 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-    if (transitiveClosureCache.find(base) != transitiveClosureCache.end()) {
-        return transitiveClosureCache[base];
+    std::shared_ptr<SimpleGraph> pos = transCache.get(base);
+    if(pos != nullptr) {
+        return pos;
     }
     auto out = std::make_shared<SimpleGraph>(base);
+
     uint32_t numNewAdded = 1;
+    trans = false;
     while (numNewAdded) {
-        joinCache.erase(std::make_tuple(out, base, trans));
-        auto delta = join(out, base, trans);
+        auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
     }
-
-    transitiveClosureCache[base] = out;
+    transCache.put(base, out);
     return out;
 }
-
 
 /**
  * Merges a graph into another graph.
@@ -157,29 +152,28 @@ uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std:
  * @param right Another graph to join with.
  * @return Answer graph for a join. Note that all labels in the answer graph are "0".
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right, bool &trans) {
-    auto cacheKey = std::make_tuple(left, right, trans);
-    if (joinCache.find(cacheKey) != joinCache.end()) {
-        return joinCache[cacheKey];
+std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+
+    auto cacheKey = std::make_tuple(left, right);
+    std::shared_ptr<SimpleGraph> pos = joiningCache.get(cacheKey);
+    if(pos != nullptr && trans) {
+        return pos;
     }
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
 
     for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
         for (auto labelTarget : left->adj[leftSource]) {
-
             int leftTarget = labelTarget.second;
             // try to join the left target with right s
             for (auto rightLabelTarget : right->adj[leftTarget]) {
 
                 auto rightTarget = rightLabelTarget.second;
                 out->addEdge(leftSource, rightTarget, 0);
-
             }
         }
     }
-    joinCache[cacheKey] = out;
-
+    joiningCache.put(cacheKey, out);
     return out;
 }
 
@@ -188,25 +182,25 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
     if(pe.kleene) {
         // evaluate closure
         joining = false;
-        pe.kleene = false;
         caching = true;
+        pe.kleene = false;
         auto base = evaluateUnionKleene(pe);
         return transitiveClosure(base);
     } else {
         // not Kleene
         if (pe.labels.size() == 1) {
+            // base label selection
             joining = false;
             caching = true;
-            // base label selection
             auto labelDir = pe.labels[0];
-            return selectLabel(labelDir.label, 0,joining, labelDir.reverse, graph);
+            return selectLabel(labelDir.label, 0, joining, labelDir.reverse, graph);
         } else {
             // (left-deep) union
-            joining = true;
+            joining =true;
             caching = false;
-            auto out = selectLabel(pe.labels[0].label, 0,joining, pe.labels[0].reverse, graph);
+            auto out = selectLabel(pe.labels[0].label, 0, joining, pe.labels[0].reverse, graph);
             for (int i = 1; i < pe.labels.size(); i++) {
-                auto rg = selectLabel(pe.labels[i].label, 0,joining, pe.labels[i].reverse, graph);
+                auto rg = selectLabel(pe.labels[i].label, 0, joining, pe.labels[i].reverse, graph);
                 unionDistinct(out, rg);
             }
             return out;
@@ -226,10 +220,10 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEnt
     // 1. evaluate concatenations
     if(path.size() > 1) {
         // (left-deep) join
+        trans = true;
         for(int i = 1; i < path.size(); i++) {
             auto rg  = evaluateUnionKleene(path[i]);
-            trans = true;
-            out = join(out, rg, trans);
+            out = join(out, rg);
         }
     }
 
@@ -288,9 +282,11 @@ cardStat SimpleEvaluator::evaluate(Triple &query) {
     auto res = evaluateConcat(query.path);
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
-
     return SimpleEvaluator::computeStats(res);
 }
- //C:\Users\kamil\CLionProjects\quicksilver2\workload\real\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver2\workload\real\1\queries.csv
- //
- //C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver2\workload\syn\1\queries.csv
+
+
+//C:\Users\micha\CLionProjects\quicksilverSecond\workload\real\1\graph.nt C:\Users\micha\CLionProjects\quicksilverSecond\workload\real\1\queries.csv
+//C:\Users\micha\CLionProjects\quickSilverProject\workload\syn\1\graph.nt C:\Users\micha\CLionProjects\quickSilverProject\workload\syn\1\queries.csv
+//C:\Users\kamil\CLionProjects\quicksilver-main\workload\real\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver-main\workload\real\1\queries.csv
+//C:\Users\kamil\CLionProjects\quicksilver-main\workload\syn\1\graph.nt C:\Users\kamil\CLionProjects\quicksilver-main\workload\syn\1\queries.csv

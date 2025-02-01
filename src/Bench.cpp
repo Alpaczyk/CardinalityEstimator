@@ -7,6 +7,7 @@
 #include <SimpleEvaluator.h>
 #include "Query.h"
 #include "QueryParser.h"
+#include "rss.h"
 
 
 std::vector<Triple> parseQueries(std::string &fileName) {
@@ -149,7 +150,10 @@ struct benchresult_t evaluatorBench(std::string &graphFile, std::string &queries
 		long localEvalTime = std::chrono::duration<double, std::milli>(end - start).count();
 		std::cout << "Time to evaluate: " << localEvalTime << " ms" << std::endl;
 		result.evalTime += localEvalTime;
+
 	}
+	double memoryUsage = double(getPeakRSS()) / 1024.0 / 1024.0;
+	std::cout << "Peak memory usage (for all workloads): " << memoryUsage << " MiB" << std::endl;
 
 	return result;
 }

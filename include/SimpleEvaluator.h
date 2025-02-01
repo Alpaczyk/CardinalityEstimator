@@ -7,45 +7,9 @@
 #include "Query.h"
 #include "Evaluator.h"
 #include "Graph.h"
-#include <tuple>
-#include <functional>
 
-namespace std {
-    // Custom hash function for std::tuple
-    template <>
-    struct hash<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t,bool, bool>> {
-        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>& key) const {
-            auto& [graph, label,join, inverse] = key;
-            size_t seed = 0;
 
-            // Hash the shared pointer's address
-            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the label
-            seed ^= std::hash<uint32_t>()(label) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the boolean value
-            seed ^= std::hash<bool>()(join) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            // Hash the boolean value
-            seed ^= std::hash<bool>()(inverse) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
-            return seed;
-        }
-    };
-    template <>
-     struct hash<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>> {
-        size_t operator()(const std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>& key) const {
-            auto& [graph, graph2, trans] = key;
-            size_t seed = 0;
-
-            // Hash the shared pointer's address
-            seed ^= std::hash<void*>()(graph.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-            seed ^= std::hash<void*>()(graph2.get()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-
-            seed ^= std::hash<bool>()(trans) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            return seed;
-        }
-    };
-}
 class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
@@ -69,10 +33,9 @@ public:
     std::shared_ptr<SimpleGraph> evaluateUnionKleene(PathEntry &pe);
 
     static std::shared_ptr<SimpleGraph> selectLabel(uint32_t projectLabel, uint32_t outLabel,bool join, bool inverse, std::shared_ptr<SimpleGraph> &in);
-    static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right, bool &trans);
+    static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
     static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
-    static void invalidateCaches(std::shared_ptr<SimpleGraph> &g);
 
     static cardStat computeStats(std::shared_ptr<SimpleGraph> &g);
 
