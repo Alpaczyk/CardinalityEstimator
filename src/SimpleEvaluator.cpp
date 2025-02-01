@@ -4,9 +4,9 @@
 #include "LruCacheJoin.h"
 #include "../include/student/LruCacheSelect.h"
 #include "../include/student/LruCacheTrans.h"
-LruCacheSelect selectCache = LruCacheSelect(5);
-LruCacheTrans transCache = LruCacheTrans(5);
-LruCacheJoin joiningCache = LruCacheJoin(5);
+LruCacheSelect selectCache = LruCacheSelect(10);
+LruCacheTrans transCache = LruCacheTrans(10);
+LruCacheJoin joiningCache = LruCacheJoin(10);
 
 bool caching = true;
 bool joining = false;
