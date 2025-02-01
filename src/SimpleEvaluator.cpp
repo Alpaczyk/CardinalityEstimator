@@ -5,7 +5,7 @@
 #include "../include/student/LruCacheSelect.h"
 #include "../include/student/LruCacheTrans.h"
 LruCacheSelect selectCache = LruCacheSelect(4);
-// LruCacheTrans transCache = LruCacheTrans(1);
+LruCacheTrans transCache = LruCacheTrans(1);
 LruCacheJoin joiningCache = LruCacheJoin(3);
 
 bool caching = true;
@@ -109,11 +109,11 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
  * @return
  */
 std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<SimpleGraph> &base) {
-    // std::shared_ptr<SimpleGraph> pos = transCache.get(base);
-    //
-    // if(pos != nullptr) {
-    //     return pos;
-    // }
+    std::shared_ptr<SimpleGraph> pos = transCache.get(base);
+
+    if(pos != nullptr) {
+        return pos;
+    }
     auto out = std::make_shared<SimpleGraph>(base);
 
     uint32_t numNewAdded = 1;
@@ -122,7 +122,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
         auto delta = join(out, base);
         numNewAdded = unionDistinct(out, delta);
     }
-    // transCache.put(base, out);
+    transCache.put(base, out);
     return out;
 }
 
