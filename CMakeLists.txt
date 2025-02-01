@@ -41,7 +41,7 @@ file(GLOB_RECURSE STUDENT_HEADER_FILES CONFIGURE_DEPENDS include/student/*.h)
 file(GLOB_RECURSE STUDENT_SOURCE_FILES CONFIGURE_DEPENDS src/student/*.cpp)
 
 add_executable(quicksilver src/main.cpp ${SOURCE_FILES} ${HEADER_FILES} ${STUDENT_SOURCE_FILES} ${STUDENT_HEADER_FILES}
-        include/LruCacheJoin.h
+        include/student/LruCacheJoin.h
         include/LruCacheSelect.h
         include/LruCacheTrans.h
         include/NodeJoin.h
