@@ -4,7 +4,7 @@
 #include "LruCacheJoin.h"
 #include "../include/student/LruCacheSelect.h"
 #include "../include/student/LruCacheTrans.h"
-LruCacheSelect selectCache = LruCacheSelect(4);
+LruCacheSelect selectCache = LruCacheSelect(6);
 LruCacheTrans transCache = LruCacheTrans(4);
 LruCacheJoin joiningCache = LruCacheJoin(4);
 
