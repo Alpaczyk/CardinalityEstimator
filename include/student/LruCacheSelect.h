@@ -7,7 +7,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "SimpleGraph.h"
+#include "../SimpleGraph.h"
 #include "NodeSelect.h"
 
 // Custom hash function for std::tuple

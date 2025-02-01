@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "NodeTrans.h"
-#include "SimpleGraph.h"
+#include "../SimpleGraph.h"
 
 
 class LruCacheTrans {

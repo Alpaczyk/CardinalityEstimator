@@ -5,8 +5,8 @@
 // Created by micha on 30.01.2025.
 //
 
-#include "LruCacheSelect.h"
-#include "NodeSelect.h"
+#include "../include/student/LruCacheSelect.h"
+#include "../include/student/NodeSelect.h"
 
 LruCacheSelect::LruCacheSelect(const int capacity) {
     oldest = new NodeSelect(std::make_tuple(nullptr, 0, false, false), nullptr);

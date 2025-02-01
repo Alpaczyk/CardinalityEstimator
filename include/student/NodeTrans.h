@@ -4,7 +4,7 @@
 
 #ifndef NODE_H
 #define NODE_H
-#include <SimpleGraph.h>
+#include <../SimpleGraph.h>
 
 
 class NodeTrans {

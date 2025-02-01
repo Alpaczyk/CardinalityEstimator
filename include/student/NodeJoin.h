@@ -6,7 +6,7 @@
 #define NODEJOIN_H
 #include <memory>
 
-#include "SimpleGraph.h"
+#include "../SimpleGraph.h"
 
 class NodeJoin {
 public:

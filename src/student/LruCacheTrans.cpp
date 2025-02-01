@@ -2,7 +2,7 @@
 // Created by micha on 30.01.2025.
 //
 
-#include "LruCacheTrans.h"
+#include "../include/student/LruCacheTrans.h"
 
 
 LruCacheTrans::LruCacheTrans(const int capacity) {

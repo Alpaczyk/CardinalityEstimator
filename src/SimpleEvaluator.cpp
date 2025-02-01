@@ -2,8 +2,8 @@
 #include "SimpleEvaluator.h"
 
 #include "LruCacheJoin.h"
-#include "LruCacheSelect.h"
-#include "LruCacheTrans.h"
+#include "../include/student/LruCacheSelect.h"
+#include "../include/student/LruCacheTrans.h"
 LruCacheSelect selectCache = LruCacheSelect(5);
 LruCacheTrans transCache = LruCacheTrans(5);
 LruCacheJoin joiningCache = LruCacheJoin(5);

@@ -42,17 +42,17 @@ file(GLOB_RECURSE STUDENT_SOURCE_FILES CONFIGURE_DEPENDS src/student/*.cpp)
 
 add_executable(quicksilver src/main.cpp ${SOURCE_FILES} ${HEADER_FILES} ${STUDENT_SOURCE_FILES} ${STUDENT_HEADER_FILES}
         include/student/LruCacheJoin.h
-        include/LruCacheSelect.h
-        include/LruCacheTrans.h
-        include/NodeJoin.h
-        include/NodeSelect.h
-        include/NodeTrans.h
-        src/LruCacheJoin.cpp
-        src/LruCacheSelect.cpp
-        src/LruCacheTrans.cpp
-        src/NodeJoin.cpp
-        src/NodeSelect.cpp
-        src/NodeTrans.cpp)
+        include/student/LruCacheSelect.h
+        include/student/LruCacheTrans.h
+        include/student/NodeJoin.h
+        include/student/NodeSelect.h
+        include/student/NodeTrans.h
+        src/student/LruCacheJoin.cpp
+        src/student/LruCacheSelect.cpp
+        src/student/LruCacheTrans.cpp
+        src/student/NodeJoin.cpp
+        src/student/NodeSelect.cpp
+        src/student/NodeTrans.cpp)
 target_link_libraries(quicksilver Threads::Threads)
 
 if (Filesystem_FOUND)
