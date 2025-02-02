@@ -4,3 +4,5 @@ l.j.hamelijnck      | 468.0     | 310.0          | 47740.0         | 3920.0    |
 l.j.hamelijnck      | 365.0     | 530.0          | 13802.0         | 3855.0    | 24.59    | 14828.384999999998   # Changed evaluateConcat with SMART TC alg
 l.j.hamelijnck      | 481.0     | 520.0          | 48472.0         | 3888.0    | 24.07    | 49478.25             # Only SMART TC alg added
 l.j.hamelijnck      | 464.0     | 510.0          | 13497.0         | 3859.0    | 24.07    | 14493.187            # evaluateConcat with source and target
+l.j.hamelijnck      | 465.0     | 455.0          | 14033.0         | 4243.0    | 24.07    | 14974.573            # Final evaluateConcat
+l.j.hamelijnck      | 465.0     | 458.0          | 13290.0         | 3826.0    | 24.07    | 14234.155999999999   # Skipping single path segments
