@@ -137,12 +137,14 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
 
     for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
         for (auto labelTarget : left->adj[leftSource]) {
+
             int leftTarget = labelTarget.second;
             // try to join the left target with right s
             for (auto rightLabelTarget : right->adj[leftTarget]) {
 
                 auto rightTarget = rightLabelTarget.second;
                 out->addEdge(leftSource, rightTarget, 0);
+
             }
         }
     }
@@ -180,20 +182,89 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateUnionKleene(PathEntry &pe)
  * @param q Parsed AST.
  * @return Solution as a graph.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(std::vector<PathEntry> &path) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t) {
+    size_t numSegments = path.size();
 
-    auto out  = evaluateUnionKleene(path[0]);
-    // evaluate according to the AST top-down
-    // 1. evaluate concatenations
-    if(path.size() > 1) {
-        // (left-deep) join
-        for(int i = 1; i < path.size(); i++) {
-            auto rg  = evaluateUnionKleene(path[i]);
-            out = join(out, rg);
+    std::cout << std::endl;
+
+    // Case 1: Only one segment, return directly
+    if (numSegments == 1) {
+        return evaluateUnionKleene(path[0]);
+    }
+
+    // Case 2: Exactly two segments, join immediately
+    if (numSegments == 2) {
+        auto left = evaluateUnionKleene(path[0]);
+        auto right = evaluateUnionKleene(path[1]);
+        return join(left, right);
+    }
+
+    // Case 3: More than two segments, use full cardinality estimation
+    std::vector<uint64_t> estimatedCardinalities; // Stores estimated cardinalities of path segments
+    std::vector<std::shared_ptr<SimpleGraph>> partialResults; // Store intermediate results of path segments
+    std::vector<std::vector<PathEntry>> remainingPaths; // Store sequences of path segments
+
+    // Step 1: Compute estimated cardinalities for individual path segments
+    if (est != nullptr) {
+        for (int i = 0; i < path.size(); i++) {
+            Triple q;
+            q.src = (i == 0) ? s : NO_IDENTIFIER;
+            q.trg = (i == path.size() - 1) ? t : NO_IDENTIFIER;
+
+            if (i == 0 && s != NO_IDENTIFIER) { // If source is specified, use it
+                q.src = s;
+            }
+            if (i == path.size() - 1 && t != NO_IDENTIFIER) { // If target is specified, use it
+                q.trg = t;
+            }
+
+            q.path = {path[i]};
+            cardStat estimate = est->estimate(q);
+
+            estimatedCardinalities.push_back(estimate.noPaths); // Store estimated cardinality
+            partialResults.push_back(evaluateUnionKleene(path[i])); // Store partial result
+
+            remainingPaths.push_back({path[i]}); // Store path segment separately
         }
     }
 
-    return out;
+    // Step 2: Iteratively join the adjacent segments with the lowest cost
+    while (partialResults.size() > 1) {
+        size_t bestPairIndex = 0;
+        uint64_t bestCost = UINT64_MAX;
+
+        for (size_t i = 0; i < estimatedCardinalities.size() - 1; i++) {
+            uint64_t joinCost = estimatedCardinalities[i] * estimatedCardinalities[i + 1];
+            if (joinCost < bestCost) {
+                bestCost = joinCost;
+                bestPairIndex = i;
+            }
+        }
+
+        // Join the best pair
+        auto joinedGraph = join(partialResults[bestPairIndex], partialResults[bestPairIndex + 1]);
+
+        // Step 3: Recalculate cardinality of the new joined segment
+        uint64_t newCardinality = joinedGraph->getNoEdges();
+    
+        // Update estimated cardinalities and partial results
+        estimatedCardinalities[bestPairIndex] = newCardinality;
+        partialResults[bestPairIndex] = joinedGraph;
+
+        // Merge paths by simply appending the right segment to the left one
+        remainingPaths[bestPairIndex].insert(
+            remainingPaths[bestPairIndex].end(),
+            remainingPaths[bestPairIndex + 1].begin(),
+            remainingPaths[bestPairIndex + 1].end()
+        );
+
+        // Remove the second element from lists
+        estimatedCardinalities.erase(estimatedCardinalities.begin() + bestPairIndex + 1);
+        partialResults.erase(partialResults.begin() + bestPairIndex + 1);
+        remainingPaths.erase(remainingPaths.begin() + bestPairIndex + 1);
+    }
+
+    return partialResults[0];
 }
 
 /**
@@ -245,7 +316,7 @@ std::shared_ptr<SimpleGraph> selectTarget(Identifier &t, std::shared_ptr<SimpleG
  * @return A cardinality statistics of the answer graph.
  */
 cardStat SimpleEvaluator::evaluate(Triple &query) {
-    auto res = evaluateConcat(query.path);
+    auto res = evaluateConcat(query.src, query.path, query.trg);
     if(query.src != NO_IDENTIFIER) res = selectSource(query.src, res);
     else if(query.trg != NO_IDENTIFIER) res = selectTarget(query.trg, res);
     return SimpleEvaluator::computeStats(res);
