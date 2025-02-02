@@ -23,17 +23,13 @@ public:
 
     void attachEstimator(std::shared_ptr<SimpleEstimator> &e);
 
-    std::shared_ptr<SimpleGraph> evaluateConcat(Identifier &s, std::vector<PathEntry> &path, Identifier &t);
+    std::shared_ptr<SimpleGraph> evaluateConcat(std::vector<PathEntry> &path);
     std::shared_ptr<SimpleGraph> evaluateUnionKleene(PathEntry &pe);
-
-    static std::shared_ptr<SimpleGraph> crank(std::shared_ptr<SimpleGraph> &delta, std::shared_ptr<SimpleGraph> &cumulativeTC);
-    static std::shared_ptr<SimpleGraph> reduce(std::shared_ptr<SimpleGraph> &newDelta, std::shared_ptr<SimpleGraph> &cumulativeTC);
 
     static std::shared_ptr<SimpleGraph> selectLabel(uint32_t projectLabel, uint32_t outLabel, bool inverse, std::shared_ptr<SimpleGraph> &in);
     static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
     static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
-
 
     static cardStat computeStats(std::shared_ptr<SimpleGraph> &g);
 

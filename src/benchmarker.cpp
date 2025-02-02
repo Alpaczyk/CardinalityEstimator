@@ -10,14 +10,14 @@ void findBenchmarks(std::vector<std::pair<std::string, std::string>>& benchmarks
 	
 	for (const auto & entry : fs::directory_iterator(directory)) {
 		if (entry.status().type() == fs::file_type::directory) {
-			findBenchmarks(benchmarks, entry.path().string());
+			findBenchmarks(benchmarks, entry.path());
 		}
 		if (entry.status().type() == fs::file_type::regular) {
 			if (entry.path().filename() == "queries.csv") {
-				queriesPath = entry.path().string();
+				queriesPath = entry.path();
 			}
 			if (entry.path().filename() == "graph.nt") {
-				graphPath = entry.path().string();
+				graphPath = entry.path();
 			}
 		}
 	}

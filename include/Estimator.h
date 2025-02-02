@@ -2,7 +2,6 @@
 #define QS_ESTIMATOR_H
 
 #include <iostream>
-#include <cstdint>  // Included this line! Otherwise uint32_t - error
 #include "Query.h"
 
 struct cardStat {
