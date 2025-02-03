@@ -134,11 +134,13 @@ struct benchresult_t evaluatorBench(std::string &graphFile, std::string &queries
 
 	auto queries = parseQueries(queriesFile);
 
-	for(auto query : queries) {
+	std::cout << "Parsed " << queries.size() << " queries." << std::endl;
 
+	for(auto query : queries) {
 		// perform evaluation
 		// parse the query into an AST
 		std::cout << "\nProcessing query: " << query.toString();
+		std::cout.flush(); // flush the output buffer to make sure we notice the query
 
 		// perform the evaluation
 		start = std::chrono::steady_clock::now();

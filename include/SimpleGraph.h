@@ -38,7 +38,7 @@ public:
 
     void setNoVertices(uint32_t n);
     void setNoLabels(uint32_t noLabels);
-
+    
 };
 
 #endif //QS_SIMPLEGRAPH_H

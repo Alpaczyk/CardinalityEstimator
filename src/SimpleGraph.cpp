@@ -17,6 +17,7 @@ uint32_t SimpleGraph::getNoVertices() const {
 
 void SimpleGraph::setNoVertices(uint32_t n) {
     V = n;
+
     adj.resize(V);
     reverse_adj.resize(V);
 }
@@ -69,6 +70,8 @@ void SimpleGraph::setNoLabels(uint32_t noLabels) {
 }
 
 void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+
+    // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
         throw std::runtime_error(std::string("Edge data out of bounds: ") +
                                          "(" + std::to_string(from) + "," + std::to_string(to) + "," +
@@ -83,7 +86,7 @@ bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
 }
 
 void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
-
+    
     std::string line;
     std::ifstream graphFile { fileName };
 
@@ -116,5 +119,17 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     }
 
     graphFile.close();
+
+    // output first 20 elements of the adjacency list
+    std::cout << "adjacency list: ";
+    for (int i = 0; i < 20; i++) {
+        std::cout << i << ": ";
+        for (const auto &pair : adj[i]) {
+            std::cout << "(" << pair.first << "," << pair.second << ") ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "Graph read successfully!" << std::endl;
 
 }
