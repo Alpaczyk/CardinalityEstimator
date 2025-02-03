@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     // uncomment for part 1
     // estimatorBench(graphFile, queriesFile);
-    
+    std::cout << "here" << std::endl;
     // uncomment for part 2
     evaluatorBench(graphFile, queriesFile);
 
