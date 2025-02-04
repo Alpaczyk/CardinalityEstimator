@@ -30,7 +30,8 @@ public:
     uint32_t getNoDistinctEdges() const override ;
     uint32_t getNoLabels() const override ;
 
-    void addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) override ;
+    void addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) ;
+    
     void readFromContiguousFile(const std::string &fileName) override ;
 
     bool edgeExists(uint16_t from, uint16_t to, uint8_t edgeLabel);
