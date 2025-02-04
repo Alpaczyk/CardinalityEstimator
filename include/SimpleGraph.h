@@ -9,7 +9,6 @@
 #include <fstream>
 #include <cstdint>
 #include "Graph.h"
-#include <cstdint>
 
 class SimpleGraph : public Graph {
 public:
