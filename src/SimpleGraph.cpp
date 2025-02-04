@@ -30,7 +30,7 @@ uint32_t SimpleGraph::getNoEdges() const {
 }
 
 // sort on the second item in the pair, then on the first (ascending order)
-bool sortPairs(const std::pair<uint32_t,uint32_t> &a, const std::pair<uint32_t,uint32_t> &b) {
+bool sortPairs(const std::pair<uint16_t,uint16_t> &a, const std::pair<uint16_t,uint16_t> &b) {
     if (a.second < b.second) return true;
     if (a.second == b.second) return a.first < b.first;
     return false;
@@ -44,8 +44,8 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
 
         std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
 
-        uint32_t prevTarget = 0;
-        uint32_t prevLabel = 0;
+        uint16_t prevTarget = 0;
+        uint16_t prevLabel = 0;
         bool first = true;
 
         for (const auto &labelTgtPair : sourceVec) {
@@ -69,7 +69,7 @@ void SimpleGraph::setNoLabels(uint32_t noLabels) {
     L = noLabels;
 }
 
-void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+void SimpleGraph::addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) {
 
     // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
@@ -80,7 +80,7 @@ void SimpleGraph::addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) {
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
 }
 
-bool SimpleGraph::edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel) {
+bool SimpleGraph::edgeExists(uint16_t from, uint16_t to, uint8_t edgeLabel) {
     auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
     return (it != adj[from].end());
 }
@@ -110,9 +110,9 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     while(std::getline(graphFile, line)) {
 
         if(std::regex_search(line, matches, edgePat)) {
-            uint32_t subject = (uint32_t) std::stoul(matches[1]);
-            uint32_t predicate = (uint32_t) std::stoul(matches[2]);
-            uint32_t object = (uint32_t) std::stoul(matches[3]);
+            uint16_t subject = (uint16_t) std::stoul(matches[1]);
+            uint8_t predicate = (uint8_t) std::stoul(matches[2]);
+            uint16_t object = (uint16_t) std::stoul(matches[3]);
 
             addEdge(subject, object, predicate);
         }
@@ -125,7 +125,7 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     for (int i = 0; i < 20; i++) {
         std::cout << i << ": ";
         for (const auto &pair : adj[i]) {
-            std::cout << "(" << pair.first << "," << pair.second << ") ";
+            std::cout << "(" << static_cast<int>(pair.first) << "," << pair.second << ") ";
         }
         std::cout << std::endl;
     }

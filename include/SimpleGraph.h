@@ -13,8 +13,9 @@
 
 class SimpleGraph : public Graph {
 public:
-    std::vector<std::vector<std::pair<uint32_t,uint32_t>>> adj;
-    std::vector<std::vector<std::pair<uint32_t,uint32_t>>> reverse_adj; // vertex adjacency list
+    std::vector<std::vector<std::pair<uint8_t, uint16_t>>> adj;
+    std::vector<std::vector<std::pair<uint8_t, uint16_t>>> reverse_adj;
+    
 protected:
     uint32_t V;
     uint32_t L;
@@ -31,10 +32,10 @@ public:
     uint32_t getNoDistinctEdges() const override ;
     uint32_t getNoLabels() const override ;
 
-    void addEdge(uint32_t from, uint32_t to, uint32_t edgeLabel) override ;
+    void addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) override ;
     void readFromContiguousFile(const std::string &fileName) override ;
 
-    bool edgeExists(uint32_t from, uint32_t to, uint32_t edgeLabel);
+    bool edgeExists(uint16_t from, uint16_t to, uint8_t edgeLabel);
 
     void setNoVertices(uint32_t n);
     void setNoLabels(uint32_t noLabels);
