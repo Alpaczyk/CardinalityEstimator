@@ -2,7 +2,6 @@
 #define QS_GRAPH_H
 
 #include <unordered_map>
-#include <cstdint>
 
 class Graph {
 
