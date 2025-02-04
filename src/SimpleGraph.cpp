@@ -45,7 +45,7 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
         std::sort(sourceVec.begin(), sourceVec.end(), sortPairs);
 
         uint16_t prevTarget = 0;
-        uint16_t prevLabel = 0;
+        uint8_t prevLabel = 0;
         bool first = true;
 
         for (const auto &labelTgtPair : sourceVec) {
