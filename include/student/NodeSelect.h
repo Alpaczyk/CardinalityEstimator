@@ -4,7 +4,7 @@
 
 #ifndef NODESELECT_H
 #define NODESELECT_H
-#include <../SimpleGraph.h>
+#include "../SimpleGraph.h"
 
 
 class NodeSelect {

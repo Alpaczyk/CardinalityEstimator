@@ -1,7 +1,7 @@
 #include "SimpleEstimator.h"
 #include "SimpleEvaluator.h"
 
-#include "LruCacheJoin.h"
+#include "../include/student/LruCacheJoin.h"
 #include "../include/student/LruCacheSelect.h"
 #include "../include/student/LruCacheTrans.h"
 LruCacheSelect selectCache = LruCacheSelect(4);

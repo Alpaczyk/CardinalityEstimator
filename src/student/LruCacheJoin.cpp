@@ -5,8 +5,8 @@
 // Created by micha on 30.01.2025.
 //
 
-#include "LruCacheJoin.h"
-
+// #include "LruCacheJoin.h"
+#include "../include/student/LruCacheJoin.h"
 
 LruCacheJoin::LruCacheJoin(const int capacity) {
     oldest = new NodeJoin(std::make_tuple(nullptr, nullptr), nullptr);
