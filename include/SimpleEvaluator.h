@@ -35,6 +35,7 @@ public:
     static std::shared_ptr<SimpleGraph> reduce(std::shared_ptr<SimpleGraph> &newDelta, std::shared_ptr<SimpleGraph> &cumulativeTC);
 
     static std::shared_ptr<SimpleGraph> selectLabel(uint32_t projectLabel, uint32_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in);
+>>>>>>> include/SimpleEvaluator.h
     static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
     static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
