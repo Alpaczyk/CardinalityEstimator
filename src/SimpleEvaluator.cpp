@@ -61,7 +61,7 @@ cardStat SimpleEvaluator::computeStats(std::shared_ptr<SimpleGraph> &g) {
  * @param in The graph to select from.
  * @return The graph which only has edges with the specified edge label.
  */
-std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel, uint32_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
+std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint16_t projectLabel, uint16_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in) {
 
     auto cacheKey = std::make_tuple(in, projectLabel,join, inverse);
     if(caching) {
@@ -76,7 +76,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
 
     if(!inverse) {
         // going forward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+        for(uint16_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->adj[source]) {
 
                 auto label = labelTarget.first;
@@ -88,7 +88,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::selectLabel(uint32_t projectLabel,
         }
     } else {
         // going backward
-        for(uint32_t source = 0; source < in->getNoVertices(); source++) {
+        for(uint16_t source = 0; source < in->getNoVertices(); source++) {
             for (auto labelTarget : in->reverse_adj[source]) {
 
                 auto label = labelTarget.first;
@@ -116,7 +116,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
     }
     auto out = std::make_shared<SimpleGraph>(base);
 
-    uint32_t numNewAdded = 1;
+    uint16_t numNewAdded = 1;
     trans = false;
     while (numNewAdded) {
         auto delta = join(out, base);
@@ -132,11 +132,11 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::transitiveClosure(std::shared_ptr<
  * @param right A graph to be merged from.
  * @return A number of distinct new edges added from the "right" graph into the "left" graph.
  */
-uint32_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
+uint16_t SimpleEvaluator::unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right) {
 
-    uint32_t numNewAdded = 0;
+    uint16_t numNewAdded = 0;
 
-    for(uint32_t source = 0; source < right->getNoVertices(); source++) {
+    for(uint16_t source = 0; source < right->getNoVertices(); source++) {
         for (auto labelTarget : right->adj[source]) {
 
             auto label = labelTarget.first;
@@ -171,7 +171,7 @@ std::shared_ptr<SimpleGraph> SimpleEvaluator::join(std::shared_ptr<SimpleGraph> 
     auto out = std::make_shared<SimpleGraph>(left->getNoVertices());
     out->setNoLabels(1);
 
-    for(uint32_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
+    for(uint16_t leftSource = 0; leftSource < left->getNoVertices(); leftSource++) {
         for (auto labelTarget : left->adj[leftSource]) {
             int leftTarget = labelTarget.second;
             // try to join the left target with right s

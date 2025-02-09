@@ -29,7 +29,7 @@ void LruCacheSelect::insert(NodeSelect* node) const {
     node->next = next;
     node->prev = prev;
 }
-std::shared_ptr<SimpleGraph> LruCacheSelect::get(std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool> &key) {
+std::shared_ptr<SimpleGraph> LruCacheSelect::get(std::tuple<std::shared_ptr<SimpleGraph>, uint16_t, bool, bool> &key) {
     if(cache.find(key) != cache.end()) {
         NodeSelect* node = cache[key];
         remove(node);
@@ -39,7 +39,7 @@ std::shared_ptr<SimpleGraph> LruCacheSelect::get(std::tuple<std::shared_ptr<Simp
     return nullptr;
 }
 
-void LruCacheSelect::put(std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool> &key, std::shared_ptr<SimpleGraph> &value) {
+void LruCacheSelect::put(std::tuple<std::shared_ptr<SimpleGraph>, uint16_t, bool, bool> &key, std::shared_ptr<SimpleGraph> &value) {
     if(cache.find(key) != cache.end()) {
         remove(cache[key]);
     }

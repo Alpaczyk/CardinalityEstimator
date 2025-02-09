@@ -14,7 +14,7 @@ class SimpleEvaluator : public Evaluator {
 
     std::shared_ptr<SimpleGraph> graph;
     std::shared_ptr<SimpleEstimator> est;
-    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint32_t, bool, bool>, std::shared_ptr<SimpleGraph>> selectLabelCache;
+    static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, uint16_t, bool, bool>, std::shared_ptr<SimpleGraph>> selectLabelCache;
     static std::unordered_map<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>> transitiveClosureCache;
     static std::unordered_map<std::tuple<std::shared_ptr<SimpleGraph>, std::shared_ptr<SimpleGraph>, bool>, std::shared_ptr<SimpleGraph>> joinCache;
 
@@ -34,10 +34,10 @@ public:
     static std::shared_ptr<SimpleGraph> crank(std::shared_ptr<SimpleGraph> &delta, std::shared_ptr<SimpleGraph> &cumulativeTC);
     static std::shared_ptr<SimpleGraph> reduce(std::shared_ptr<SimpleGraph> &newDelta, std::shared_ptr<SimpleGraph> &cumulativeTC);
 
-    static std::shared_ptr<SimpleGraph> selectLabel(uint32_t projectLabel, uint32_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in);
+    static std::shared_ptr<SimpleGraph> selectLabel(uint16_t projectLabel, uint16_t outLabel, bool join, bool inverse, std::shared_ptr<SimpleGraph> &in);
     static std::shared_ptr<SimpleGraph> join(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
     static std::shared_ptr<SimpleGraph> transitiveClosure( std::shared_ptr<SimpleGraph> &base);
-    static uint32_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
+    static uint16_t unionDistinct(std::shared_ptr<SimpleGraph> &left, std::shared_ptr<SimpleGraph> &right);
 
 
     static cardStat computeStats(std::shared_ptr<SimpleGraph> &g);

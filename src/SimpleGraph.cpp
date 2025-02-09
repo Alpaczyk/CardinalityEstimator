@@ -1,6 +1,6 @@
 #include "SimpleGraph.h"
 
-SimpleGraph::SimpleGraph(uint32_t n)   {
+SimpleGraph::SimpleGraph(uint16_t n)   {
     setNoVertices(n);
 }
 
@@ -11,19 +11,19 @@ SimpleGraph::SimpleGraph(std::shared_ptr<SimpleGraph> &other)   {
     L = other->getNoLabels();
 }
 
-uint32_t SimpleGraph::getNoVertices() const {
+uint16_t SimpleGraph::getNoVertices() const {
     return V;
 }
 
-void SimpleGraph::setNoVertices(uint32_t n) {
+void SimpleGraph::setNoVertices(uint16_t n) {
     V = n;
 
     adj.resize(V);
     reverse_adj.resize(V);
 }
 
-uint32_t SimpleGraph::getNoEdges() const {
-    uint32_t sum = 0;
+uint16_t SimpleGraph::getNoEdges() const {
+    uint16_t sum = 0;
     for (const auto & l : adj)
         sum += l.size();
     return sum;
@@ -36,9 +36,9 @@ bool sortPairs(const std::pair<uint8_t,uint16_t> &a, const std::pair<uint8_t,uin
     return false;
 }
 
-uint32_t SimpleGraph::getNoDistinctEdges() const {
+uint16_t SimpleGraph::getNoDistinctEdges() const {
 
-    uint32_t sum = 0;
+    uint16_t sum = 0;
 
     for (auto sourceVec : adj) {
 
@@ -61,15 +61,15 @@ uint32_t SimpleGraph::getNoDistinctEdges() const {
     return sum;
 }
 
-uint32_t SimpleGraph::getNoLabels() const {
+uint16_t SimpleGraph::getNoLabels() const {
     return L;
 }
 
-void SimpleGraph::setNoLabels(uint32_t noLabels) {
+void SimpleGraph::setNoLabels(uint16_t noLabels) {
     L = noLabels;
 }
 
-void SimpleGraph::addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) {
+void SimpleGraph::addEdge(uint16_t from, uint16_t to, uint16_t edgeLabel) {
 
     // construction of the adjacency list
     if(from >= V || to >= V || edgeLabel >= L)
@@ -80,7 +80,7 @@ void SimpleGraph::addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) {
     reverse_adj[to].emplace_back(std::make_pair(edgeLabel, from));
 }
 
-bool SimpleGraph::edgeExists(uint16_t from, uint16_t to, uint8_t edgeLabel) {
+bool SimpleGraph::edgeExists(uint16_t from, uint16_t to, uint16_t edgeLabel) {
     auto it = std::find(adj[from].begin(), adj[from].end(), std::make_pair(edgeLabel, to));
     return (it != adj[from].end());
 }
@@ -97,8 +97,8 @@ void SimpleGraph::readFromContiguousFile(const std::string &fileName) {
     std::getline(graphFile, line);
     std::smatch matches;
     if(std::regex_search(line, matches, headerPat)) {
-        uint32_t noNodes = (uint32_t) std::stoul(matches[1]);
-        uint32_t noLabels = (uint32_t) std::stoul(matches[3]);
+        uint32_t noNodes = (uint16_t) std::stoul(matches[1]);
+        uint32_t noLabels = (uint16_t) std::stoul(matches[3]);
 
         setNoVertices(noNodes);
         setNoLabels(noLabels);

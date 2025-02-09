@@ -8,12 +8,12 @@ class Graph {
 
 public:
 
-    virtual uint32_t getNoVertices() const = 0;
-    virtual uint32_t getNoEdges() const = 0;
-    virtual uint32_t getNoDistinctEdges() const = 0;
-    virtual uint32_t getNoLabels() const = 0;
+    virtual uint16_t getNoVertices() const = 0;
+    virtual uint16_t getNoEdges() const = 0;
+    virtual uint16_t getNoDistinctEdges() const = 0;
+    virtual uint16_t getNoLabels() const = 0;
 
-    virtual void addEdge(uint16_t from, uint16_t to, uint8_t edgeLabel) = 0;
+    virtual void addEdge(uint16_t from, uint16_t to, uint16_t edgeLabel) = 0;
     virtual void readFromContiguousFile(const std::string &fileName) = 0;
 
 };
