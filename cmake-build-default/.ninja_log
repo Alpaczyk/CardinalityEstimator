@@ -1,0 +1,10 @@
+# ninja log v6
+22	54	7579914636857782	C:/Users/kamil/CLionProjects/quicksilver2/cmake-build-default/CMakeFiles/cmake.verify_globs	4de05e981b57e402
+1765	3253	7579908876029918	CMakeFiles/quicksilver.dir/src/SimpleEvaluator.cpp.obj	5c608667a1f96d2a
+64	786	7579912728364590	CMakeFiles/quicksilver.dir/src/main.cpp.obj	6c5b1b701261eb6b
+62	6176	7579908859004290	CMakeFiles/quicksilver.dir/src/SimpleGraph.cpp.obj	8ae30c914d4807b6
+59	1764	7579908858974289	CMakeFiles/quicksilver.dir/src/QueryParser.cpp.obj	cfc02df34ee43608
+980	3071	7579908868178809	CMakeFiles/quicksilver.dir/src/SimpleEstimator.cpp.obj	273784bdd8088e51
+3253	6517	7579908890919417	CMakeFiles/quicksilver.dir/src/rss.c.obj	345d765856ca8177
+3072	8442	7579908889108787	CMakeFiles/quicksilver.dir/src/Bench.cpp.obj	5a41853dc358fc3b
+787	1054	7579912735598930	quicksilver.exe	bec54f5869d767c9

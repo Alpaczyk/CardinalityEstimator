@@ -1,0 +1,3 @@
+C:/Users/kamil/CLionProjects/quicksilver2/cmake-build-default/CMakeFiles/quicksilver.dir
+C:/Users/kamil/CLionProjects/quicksilver2/cmake-build-default/CMakeFiles/edit_cache.dir
+C:/Users/kamil/CLionProjects/quicksilver2/cmake-build-default/CMakeFiles/rebuild_cache.dir
